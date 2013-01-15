@@ -121,6 +121,8 @@
           <li id="nav-main-learning" role="menuitem"><a href="{{ url('learn') }}" class="learning">{{ _('Learning') }}</a></li>
           <li id="nav-main-community" class="menu" role="menuitem"><a href="#nav-sub-community" class="community toggle" aria-haspopup="true" aria-labelledby="nav-main-community">{{ _('Community') }}</a>
             <ul id="nav-sub-community" class="sub-menu">
+              <li><a href="{{ url('badger.views.badges_list') }}">{{ _('Badges') }}</a></li>
+              <li><a href="{{ url('badger.views.awards_list') }}">{{ _('Awards') }}</a></li>
               <li><a href="{{ url('events') }}">{{ _('Events') }}</a></li>
               <li><a href="{{ url('promote') }}">{{ _('Promote') }}</a></li>
               <li><a href="{{ devmo_url('Project:How_to_Help') }}">{{ _('Contribute') }}</a></li>
@@ -147,7 +149,10 @@
   </header>
 {# end head #}
 
-    {{ soapbox_messages(get_soapbox_messages(request.path)) }}
+{{ soapbox_messages(get_soapbox_messages(request.path)) }}
+
+{% include "badger/includes/recent_badge_awards.html" %}
+
 {% block content %}{% endblock %}
 
 {# footer #}

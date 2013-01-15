@@ -1,8 +1,10 @@
 {% if user.is_authenticated() %}
   <ul class="user-state">
     {% set username = request.user.username %}
+    {% if username %}
       <li><a href="{{ url('devmo.views.profile_view', username=username) }}">{{ _('{username}') | f(username=username) }}</a></li>
       <li><a href="{{ url('users.logout') }}?next={{ next_url }}">{{ _('Sign out') }}</a></li>
+    {% endif %}
   </ul>
 {% else %}
 <ul class="user-state signed-out">

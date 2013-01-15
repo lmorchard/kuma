@@ -26,6 +26,7 @@ ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
 
+SITE_TITLE = 'Mozilla Developer Network'
 SITE_URL = 'https://developer.mozilla.org'
 PROTOCOL = 'https://'
 DOMAIN = 'developer.mozilla.org'
@@ -275,10 +276,17 @@ SECRET_KEY = '#%tc(zja8j01!r#h_y)=hy!^k)9az74k+-ib&ij&+**s3-e^_z'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
+    'jingo_loader.Loader',
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
 )
+
+# Because Jinja2 is the default template loader, add any non-Jinja templated
+# apps here:
+JINGO_EXCLUDE_APPS = [
+    'debug_toolbar',
+    'admin',
+]
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.auth',
@@ -333,6 +341,9 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django_statsd.middleware.GraphiteRequestTimingMiddleware',
     'django_statsd.middleware.GraphiteMiddleware',
+
+    'badger.middleware.RecentBadgeAwardsMiddleware',
+    'wiki.badges.BadgeAwardingMiddleware',
 )
 
 # Auth
@@ -435,6 +446,8 @@ INSTALLED_APPS = (
 
     # other
     'humans',
+
+    'badger',
 )
 
 TEST_RUNNER = 'test_utils.runner.RadicalTestSuiteRunner'
@@ -527,6 +540,7 @@ MINIFY_BUNDLES = {
             'css/mdn-video-player.css',
             'css/mdn-forums-sidebar-module.css',
             'css/mdn-calendar.css',
+            'css/badges.css',
         ),
         'demostudio': (
             'css/demos.css',
@@ -617,6 +631,8 @@ MINIFY_BUNDLES = {
             'js/mdn/video-player.js',
 
             'js/mdn/jquery.simplemodal.1.4.1.min.js',
+
+            'js/badges.js',
         ),
         'profile': (
             'js/mdn/profile.js',
@@ -1066,3 +1082,16 @@ GRAPHITE_HOST = 'localhost'
 GRAPHITE_PORT = 2003
 GRAPHITE_PREFIX = 'devmo'
 GRAPHITE_TIMEOUT = 1
+
+OBI_BASE_URL = 'https://beta.openbadges.org/'
+
+def get_user_url(user):
+    from sumo.urlresolvers import reverse
+    return reverse('devmo.views.profile_view', args=[user.username])
+
+ABSOLUTE_URL_OVERRIDES = {
+    'auth.user': get_user_url
+}
+
+BADGER_MEDIA_ROOT = path('media/badger')
+BADGER_MEDIA_URL = '/media/badger/'

@@ -7,10 +7,11 @@ from django.views.decorators.cache import cache_page
 
 import authority
 import jingo
-
+import badger
 
 admin.autodiscover()
 authority.autodiscover()
+badger.autodiscover()
 
 urlpatterns = patterns('',
    # Home / landing pages:
@@ -76,6 +77,15 @@ urlpatterns = patterns('',
     #(r'', include('sumo.urls')),
     (r'^humans.txt$', 'django.views.static.serve',
         {'document_root': settings.HUMANSTXT_ROOT, 'path': 'humans.txt'}),
+
+    # Badges
+    (r'^badges/', include('badger.urls_simple')),    
+
+    # Legacy MindTouch redirects.
+    url(r'^@api/deki/files/(?P<file_id>\d+)/=(?P<filename>.+)$',
+        'wiki.views.mindtouch_file_redirect',
+        name='wiki.mindtouch_file_redirect'),
+    (r'^(?P<path>.*)$', 'wiki.views.mindtouch_to_kuma_redirect'),
 )
 
 
