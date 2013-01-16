@@ -325,7 +325,6 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'sumo.anonymous.AnonymousIdentityMiddleware',
-    #'twitter.middleware.SessionMiddleware',
     'sumo.middleware.PlusToSpaceMiddleware',
     'commonware.middleware.HidePasswordOnException',
     #'dekicompat.middleware.DekiUserMiddleware',
@@ -418,7 +417,6 @@ INSTALLED_APPS = (
     'wiki',
     'dashboards',
     'gallery',
-    #'twitter',
 
     # migrations
     'south',
@@ -475,7 +473,6 @@ DOMAIN_METHODS = {
         ('apps/search/**', 'ignore'),
         ('apps/sumo/**', 'ignore'),
         ('apps/tags/**', 'ignore'),
-        ('apps/twitter/**', 'ignore'),
         ('apps/upload/**', 'ignore'),
         ('apps/**.py',
             'tower.management.commands.extract.extract_tower_python'),
@@ -841,9 +838,6 @@ CC_TOP_CONTRIB_CACHE_KEY = 'sumo-cc-top-contrib-stats'
 CC_STATS_CACHE_TIMEOUT = 24 * 60 * 60  # 24 hours
 CC_STATS_WARNING = 30 * 60 * 60  # Warn if JSON data is older than 30 hours
 CC_IGNORE_USERS = ['fx4status']  # User names whose tweets to ignore.
-
-TWITTER_CONSUMER_KEY = ''
-TWITTER_CONSUMER_SECRET = ''
 
 
 NOTIFICATIONS_FROM_ADDRESS = 'notifications@support.mozilla.com'
