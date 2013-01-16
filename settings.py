@@ -423,7 +423,6 @@ INSTALLED_APPS = (
     'gallery',
     #'customercare',
     #'twitter',
-    #'chat',
     #'inproduct',
 
     # migrations
@@ -473,7 +472,6 @@ DOMAIN_METHODS = {
     'messages': [
         ('vendor/**', 'ignore'),
         ('apps/access/**', 'ignore'),
-        ('apps/chat/**', 'ignore'),
         ('apps/customercare/**', 'ignore'),
         ('apps/dashboards/**', 'ignore'),
         ('apps/flagit/**', 'ignore'),
@@ -587,9 +585,6 @@ MINIFY_BUNDLES = {
         'customercare': (
             'css/customercare.css',
         ),
-        'chat': (
-            'css/chat.css',
-        ),
         'users': (
             'css/users.css',
         ),
@@ -700,9 +695,6 @@ MINIFY_BUNDLES = {
             'js/libs/jquery.bullseye-1.0.min.js',
             'js/customercare.js',
             'js/users.js',
-        ),
-        'chat': (
-            'js/chat.js',
         ),
         'users': (
             'js/users.js',
@@ -885,10 +877,6 @@ NOTIFICATIONS_FROM_ADDRESS = 'notifications@support.mozilla.com'
 # Anonymous watches must be confirmed.
 CONFIRM_ANONYMOUS_WATCHES = True
 
-
-# URL of the chat server.
-CHAT_SERVER = 'https://chat-support.mozilla.com:9091'
-CHAT_CACHE_KEY = 'sumo-chat-queue-status'
 
 WEBTRENDS_WIKI_REPORT_URL = 'https://example.com/see_production.rst'
 WEBTRENDS_USER = r'someaccount\someusername'
