@@ -409,7 +409,6 @@ INSTALLED_APPS = (
     #'sumo',
     # TODO: Reenable search when we switch to kuma wiki - or, at least waffle it.
     'search',
-    #'forums',
     'djcelery',
     'notifications',
     #'questions',
@@ -418,7 +417,6 @@ INSTALLED_APPS = (
     #'flagit',
     #'upload',
     'wiki',
-    #'kbforums',
     'dashboards',
     'gallery',
     #'twitter',
@@ -473,11 +471,9 @@ DOMAIN_METHODS = {
         ('apps/access/**', 'ignore'),
         ('apps/dashboards/**', 'ignore'),
         ('apps/flagit/**', 'ignore'),
-        ('apps/forums/**', 'ignore'),
         ('apps/gallery/**', 'ignore'),
         ('apps/inproduct/**', 'ignore'),
         ('apps/kadmin/**', 'ignore'),
-        ('apps/kbforums/**', 'ignore'),
         ('apps/questions/**', 'ignore'),
         ('apps/search/**', 'ignore'),
         ('apps/sumo/**', 'ignore'),
@@ -490,7 +486,6 @@ DOMAIN_METHODS = {
             'tower.management.commands.extract.extract_tower_template'),
     ],
 #    'lhtml': [
-#        ('apps/forums/**', 'ignore'),
 #        ('apps/questions/**', 'ignore'),
 #        ('**/templates/**.lhtml',
 #            'tower.management.commands.extract.extract_tower_template'),
@@ -540,9 +535,6 @@ MINIFY_BUNDLES = {
         'jqueryui/jqueryui': (
             'css/jqueryui/jquery-ui-1.8.14.custom.css',
             #'css/jqueryui/jqueryui.css',
-        ),
-        'forums': (
-            'css/forums.css',
         ),
         'questions': (
             'css/to-delete.css',
@@ -649,10 +641,6 @@ MINIFY_BUNDLES = {
         ),
         'search': (
             'js/search.js',
-        ),
-        'forums': (
-            'js/markup.js',
-            'js/forums.js',
         ),
         'gallery': (
             'js/libs/jquery.ajaxupload.js',

@@ -17,7 +17,6 @@ from tower import ugettext as _
 from search.clients import (QuestionsClient, WikiClient,
                             DiscussionClient, SearchError)
 from search.utils import crc32, locale_or_default, sphinx_locale
-from forums.models import Thread, Post
 from questions.models import Question
 import search as constants
 from search.forms import SearchForm
@@ -326,19 +325,6 @@ def search(request):
                           'url': question.get_absolute_url(),
                           'title': question.title,
                           'type': 'question', }
-                results.append(result)
-            else:
-                thread = Thread.objects.get(
-                    pk=documents[i]['attrs']['thread_id'])
-                post = Post.objects.get(pk=documents[i]['id'])
-
-                excerpt = dc.excerpt(post.content, cleaned['q'])
-                summary = jinja2.Markup(excerpt)
-
-                result = {'search_summary': summary,
-                          'url': thread.get_absolute_url(),
-                          'title': thread.title,
-                          'type': 'thread', }
                 results.append(result)
         except IndexError:
             break
