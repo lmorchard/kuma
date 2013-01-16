@@ -318,7 +318,6 @@ MIDDLEWARE_CLASSES = (
     'sumo.middleware.Forbidden403Middleware',
     'django.middleware.common.CommonMiddleware',
     'sumo.middleware.RemoveSlashMiddleware',
-    'inproduct.middleware.EuBuildMiddleware',
     'commonware.middleware.NoVarySessionMiddleware',
     'commonware.middleware.FrameOptionsHeader',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -420,7 +419,6 @@ INSTALLED_APPS = (
     'dashboards',
     'gallery',
     #'twitter',
-    #'inproduct',
 
     # migrations
     'south',
@@ -472,7 +470,6 @@ DOMAIN_METHODS = {
         ('apps/dashboards/**', 'ignore'),
         ('apps/flagit/**', 'ignore'),
         ('apps/gallery/**', 'ignore'),
-        ('apps/inproduct/**', 'ignore'),
         ('apps/kadmin/**', 'ignore'),
         ('apps/questions/**', 'ignore'),
         ('apps/search/**', 'ignore'),
