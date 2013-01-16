@@ -465,7 +465,6 @@ DOMAIN_METHODS = {
         ('apps/flagit/**', 'ignore'),
         ('apps/search/**', 'ignore'),
         ('apps/sumo/**', 'ignore'),
-        ('apps/tags/**', 'ignore'),
         ('apps/**.py',
             'tower.management.commands.extract.extract_tower_python'),
         ('**/templates/**.html',

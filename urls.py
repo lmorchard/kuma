@@ -25,22 +25,10 @@ urlpatterns = patterns('',
     (r'^admin/', include(admin.site.urls)),
 
     (r'^search', include('search.urls')),
-    #(r'^forums', include('forums.urls')),
-    #(r'^questions', include('questions.urls')),
-    #(r'^flagged', include('flagit.urls')),
-    #(r'^upload', include('upload.urls')),
 
     # Docs landing page and next-gen kuma wiki
     ('', include('docs.urls')),
     (r'^docs', include('wiki.urls')),
-
-    #(r'^gallery', include('gallery.urls')),
-    #(r'^army-of-awesome', include('customercare.urls')),
-    #(r'^chat', include('chat.urls')),
-    #(r'^1', include('inproduct.urls')),
-
-    # Kitsune admin (not Django admin).
-    #(r'^admin/', include('kadmin.urls')),
 
     # Javascript translations.
     url(r'^jsi18n/.*$', cache_page(60 * 60 * 24 * 365)(javascript_catalog),
@@ -73,7 +61,6 @@ urlpatterns = patterns('',
     (r'^keys/', include('authkeys.urls')),
 
     # Services and sundry.
-    #(r'', include('sumo.urls')),
     (r'^humans.txt$', 'django.views.static.serve',
         {'document_root': settings.HUMANSTXT_ROOT, 'path': 'humans.txt'}),
 )
