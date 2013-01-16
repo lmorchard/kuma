@@ -409,7 +409,6 @@ INSTALLED_APPS = (
     'search',
     'djcelery',
     'notifications',
-    #'questions',
     'taggit',
     #'flagit',
     #'upload',
@@ -467,7 +466,6 @@ DOMAIN_METHODS = {
         ('apps/dashboards/**', 'ignore'),
         ('apps/flagit/**', 'ignore'),
         ('apps/gallery/**', 'ignore'),
-        ('apps/questions/**', 'ignore'),
         ('apps/search/**', 'ignore'),
         ('apps/sumo/**', 'ignore'),
         ('apps/tags/**', 'ignore'),
@@ -478,7 +476,6 @@ DOMAIN_METHODS = {
             'tower.management.commands.extract.extract_tower_template'),
     ],
 #    'lhtml': [
-#        ('apps/questions/**', 'ignore'),
 #        ('**/templates/**.lhtml',
 #            'tower.management.commands.extract.extract_tower_template'),
 #    ],
@@ -527,11 +524,6 @@ MINIFY_BUNDLES = {
         'jqueryui/jqueryui': (
             'css/jqueryui/jquery-ui-1.8.14.custom.css',
             #'css/jqueryui/jqueryui.css',
-        ),
-        'questions': (
-            'css/to-delete.css',
-            'css/questions.css',
-            'css/tags.css',
         ),
         'search': (
             'css/search.css',
@@ -623,13 +615,6 @@ MINIFY_BUNDLES = {
         ),
         'libs/tagit': (
             'js/libs/tag-it.js',
-        ),
-        'questions': (
-            'js/markup.js',
-            'js/libs/jquery.ajaxupload.js',
-            'js/upload.js',
-            'js/questions.js',
-            'js/tags.js',
         ),
         'search': (
             'js/search.js',
@@ -740,14 +725,6 @@ IMAGE_UPLOAD_PATH = 'uploads/images/'
 # A string listing image mime types to accept, comma separated.
 # String must not contain double quotes!
 IMAGE_ALLOWED_MIMETYPES = 'image/jpeg,image/png,image/gif'
-
-# Max number of wiki pages or other questions to suggest might answer the
-# question you're about to ask
-QUESTIONS_MAX_SUGGESTIONS = 5
-# Number of extra suggestion results to pull from Sphinx to make up for
-# possibly deleted wiki pages or question. To be safe, set this to the number
-# of things that could be deleted between indexer runs.
-QUESTIONS_SUGGESTION_SLOP = 3
 
 # Email
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'

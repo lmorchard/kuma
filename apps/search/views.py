@@ -17,7 +17,6 @@ from tower import ugettext as _
 from search.clients import (QuestionsClient, WikiClient,
                             DiscussionClient, SearchError)
 from search.utils import crc32, locale_or_default, sphinx_locale
-from questions.models import Question
 import search as constants
 from search.forms import SearchForm
 from sumo.utils import paginate, smart_int
