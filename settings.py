@@ -421,7 +421,6 @@ INSTALLED_APPS = (
     #'kbforums',
     'dashboards',
     'gallery',
-    #'customercare',
     #'twitter',
     #'inproduct',
 
@@ -472,7 +471,6 @@ DOMAIN_METHODS = {
     'messages': [
         ('vendor/**', 'ignore'),
         ('apps/access/**', 'ignore'),
-        ('apps/customercare/**', 'ignore'),
         ('apps/dashboards/**', 'ignore'),
         ('apps/flagit/**', 'ignore'),
         ('apps/forums/**', 'ignore'),
@@ -582,9 +580,6 @@ MINIFY_BUNDLES = {
         'ie': (
             'css/ie.css',
         ),
-        'customercare': (
-            'css/customercare.css',
-        ),
         'users': (
             'css/users.css',
         ),
@@ -688,13 +683,6 @@ MINIFY_BUNDLES = {
             'js/moz-jquery-plugins.js',
             'js/libs/DataTables-1.9.4/media/js/jquery.dataTables.js',
             'js/libs/DataTables-1.9.4/extras/Scroller/media/js/dataTables.scroller.js',
-        ),
-        'customercare': (
-            'js/libs/jquery.NobleCount.js',
-            'js/libs/jquery.cookie.js',
-            'js/libs/jquery.bullseye-1.0.min.js',
-            'js/customercare.js',
-            'js/users.js',
         ),
         'users': (
             'js/users.js',
