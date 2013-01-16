@@ -410,7 +410,6 @@ INSTALLED_APPS = (
     'djcelery',
     'notifications',
     'taggit',
-    #'flagit',
     'wiki',
     'dashboards',
 
@@ -462,7 +461,6 @@ DOMAIN_METHODS = {
         ('vendor/**', 'ignore'),
         ('apps/access/**', 'ignore'),
         ('apps/dashboards/**', 'ignore'),
-        ('apps/flagit/**', 'ignore'),
         ('apps/search/**', 'ignore'),
         ('apps/sumo/**', 'ignore'),
         ('apps/**.py',
