@@ -34,7 +34,6 @@ from users.forms import (ProfileForm, AvatarForm, EmailConfirmationForm,
                          EmailReminderForm)
 from users.models import Profile, RegistrationProfile, EmailChange
 from devmo.models import UserProfile
-from dekicompat.backends import DekiUserBackend, MindTouchAPIError
 from users.utils import (handle_login, handle_register, send_reminder_email,
                          statsd_waffle_incr)
 
@@ -55,17 +54,6 @@ def _verify_browserid(form, request):
     backend = browserid_auth.BrowserIDBackend()
     result = backend.verify(assertion, get_audience(request))
     return result
-
-
-def _redirect_with_mindtouch_login(next_url, username, password=None):
-    resp = HttpResponseRedirect(next_url)
-    if not settings.DEKIWIKI_ENDPOINT:
-        return resp
-    authtoken = DekiUserBackend.mindtouch_login(username, password,
-                                                force=True)
-    if authtoken:
-        resp.set_cookie('authtoken', authtoken)
-    return resp
 
 
 def _get_latest_user_with_email(email):
@@ -138,20 +126,13 @@ def browserid_verify(request):
 
     # Look for first most recently used Django account, use if found.
     user = _get_latest_user_with_email(email)
-    # If no Django account, look for a MindTouch account by email. But, only if
-    # there's a MindTouch API available. If found, auto-create the user.
-    if not user and settings.DEKIWIKI_ENDPOINT:
-        deki_user = DekiUserBackend.get_deki_user_by_email(email)
-        if deki_user:
-            user = DekiUserBackend.get_or_create_user(deki_user)
 
     # If we got a user from either the Django or MT paths, complete login for
     # Django and MT and redirect.
     if user:
         user.backend = 'django_browserid.auth.BrowserIDBackend'
         auth.login(request, user)
-        return set_browserid_explained(
-            _redirect_with_mindtouch_login(redirect_to, user.username))
+        return set_browserid_explained(HttpResponseRedirect(redirect_to))
 
     # Retain the verified email in a session, redirect to registration page.
     request.session[SESSION_VERIFIED_EMAIL] = email
@@ -183,42 +164,26 @@ def browserid_register(request):
         if 'register' == request.POST.get('action', None):
             register_form = BrowserIDRegisterForm(request.POST)
             if register_form.is_valid():
-                try:
-                    # If the registration form is valid, then create a new
-                    # Django user, a new MindTouch user, and link the two
-                    # together.
-                    # TODO: This all belongs in model classes
-                    username = register_form.cleaned_data['username']
+                username = register_form.cleaned_data['username']
 
-                    user = User.objects.create(username=username, email=email)
-                    user.set_unusable_password()
-                    user.save()
+                user = User.objects.create(username=username, email=email)
+                user.set_unusable_password()
+                user.save()
 
-                    profile = UserProfile.objects.create(user=user)
-                    if settings.DEKIWIKI_ENDPOINT:
-                        deki_user = DekiUserBackend.post_mindtouch_user(user)
-                        profile.deki_user_id = deki_user.id
-                    profile.save()
+                profile = UserProfile.objects.create(user=user)
+                profile.save()
 
-                    user.backend = 'django_browserid.auth.BrowserIDBackend'
-                    auth.login(request, user)
+                user.backend = 'django_browserid.auth.BrowserIDBackend'
+                auth.login(request, user)
 
-                    # Bounce to the newly created profile page, since the user
-                    # might want to review & edit.
-                    statsd_waffle_incr('users.browserid_register.POST.SUCCESS',
-                                       'signin_metrics')
-                    redirect_to = request.session.get(SESSION_REDIRECT_TO,
-                                                    profile.get_absolute_url())
-                    return set_browserid_explained(
-                        _redirect_with_mindtouch_login(redirect_to,
-                                                       user.username))
-                except MindTouchAPIError:
-                    if user:
-                        user.delete()
-                    return jingo.render(request, '500.html',
-                                        {'error_message': "We couldn't "
-                                        "register a new account at this time. "
-                                        "Please try again later."})
+                # Bounce to the newly created profile page, since the user
+                # might want to review & edit.
+                statsd_waffle_incr('users.browserid_register.POST.SUCCESS',
+                                   'signin_metrics')
+                redirect_to = request.session.get(SESSION_REDIRECT_TO,
+                                                profile.get_absolute_url())
+                return set_browserid_explained(
+                        HttpResponseRedirect(redirect_to))
 
     # HACK: Pretend the session was modified. Otherwise, the data disappears
     # for the next request.
@@ -242,9 +207,7 @@ def login(request):
 
     if form.is_valid() and request.user.is_authenticated():
         next_url = next_url or reverse('home')
-        return _redirect_with_mindtouch_login(next_url,
-            form.cleaned_data.get('username'),
-            form.cleaned_data.get('password'))
+        return HttpResponseRedirect(next_url)
 
     response = jingo.render(request, 'users/login.html',
                             {'form': form, 'next_url': next_url})
@@ -256,10 +219,9 @@ def login(request):
 def logout(request):
     """Log the user out."""
     auth.logout(request)
+    request.session.flush()
     next_url = _clean_next_url(request) or reverse('home')
-
     resp = HttpResponseRedirect(next_url)
-    resp.delete_cookie('authtoken')
     return resp
 
 
@@ -397,8 +359,6 @@ def confirm_change_email(request, activation_key):
         # Update user's email.
         u.email = new_email
         u.save()
-        if settings.DEKIWIKI_ENDPOINT:
-            DekiUserBackend.put_mindtouch_user(u)
 
     # Delete the activation profile now, we don't need it anymore.
     email_change.delete()

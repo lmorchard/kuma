@@ -16,7 +16,7 @@ from access.decorators import login_required
 from demos.models import Submission
 
 from . import INTEREST_SUGGESTIONS
-from .models import Calendar, Event, UserProfile, UserDocsActivityFeed
+from .models import Calendar, Event, UserProfile
 from .forms import UserProfileEditForm
 
 
