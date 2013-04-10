@@ -17,7 +17,8 @@ class dev {
         tools:  before => Stage[basics];
         basics: before => Stage[langs];
         langs:  before => Stage[vendors];
-        vendors:   before => Stage[main];
+        vendors:   before => Stage[basics_2];
+        basics_2: before => Stage[main];
         vendors_post:  require => Stage[main];
         # Stage[main]
         hacks_post: require => Stage[vendors_post];
@@ -38,6 +39,8 @@ class dev {
 
         nodejs: stage => langs;
         python: stage => langs;
+
+        statsd:         stage => basics_2;
 
         site_config: stage => main;
         dev_hacks_post: stage => hacks_post;
