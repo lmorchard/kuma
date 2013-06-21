@@ -1808,7 +1808,7 @@ def code_sample(request, document_slug, document_locale, sample_id):
                     request.META.get('HTTP_HOST'), request.path)))
 
     # HACK: Temporary looksee into Host: header for lmorchard
-    if request.user.is_authenticated() and 'lmorchard' == request.user.username:
+    if request.GET.get('bug883874', None) is not None:
         return HttpResponse('FULL ADDRESS IS %s' % full_address)
 
     if not re.search(constance.config.KUMA_WIKI_IFRAME_ALLOWED_HOSTS, full_address):
