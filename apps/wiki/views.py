@@ -1807,6 +1807,10 @@ def code_sample(request, document_slug, document_locale, sample_id):
     full_address = (''.join(('http', ('', 's')[request.is_secure()], '://', 
                     request.META.get('HTTP_HOST'), request.path)))
 
+    # HACK: Temporary looksee into Host: header for lmorchard
+    if request.user.is_authenticated() and 'lmorchard' == request.user.username:
+        return HttpResponse('FULL ADDRESS IS %s' % full_address)
+
     if not re.search(constance.config.KUMA_WIKI_IFRAME_ALLOWED_HOSTS, full_address):
         raise PermissionDenied
 
