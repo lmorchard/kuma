@@ -19,6 +19,7 @@ urlpatterns = patterns('',
     (r'^demos', lambda x: redirect('demos')),
 
     # Django admin:
+    (r'^grappelli/', include('grappelli.urls')),
     (r'^admin/', include('smuggler.urls')),
     (r'^admin/', include(admin.site.urls)),
 
