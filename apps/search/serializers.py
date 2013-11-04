@@ -4,13 +4,17 @@ from .fields import SearchQueryField, DocumentExcerptField
 from .models import Filter
 
 
+class URLSerializer(serializers.Serializer):
+    enabled = serializers.CharField(read_only=True)
+    disabled = serializers.CharField(read_only=True)
+
+
 class FacetSerializer(serializers.Serializer):
     name = serializers.CharField(read_only=True)
     slug = serializers.CharField(read_only=True)
     count = serializers.IntegerField(read_only=True)
     enabled = serializers.BooleanField(read_only=True)
-    url_enabled = serializers.Field(read_only=True)
-    url_disabled = serializers.Field(read_only=True)
+    urls = URLSerializer(read_only=True)
 
 
 class SearchSerializer(pagination.PaginationSerializer):

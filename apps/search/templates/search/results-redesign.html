@@ -166,9 +166,9 @@
               if face.url_disabled is available that means the facet is applied and should somehow indicate that to the user.
               here I'm using a blasphemous style attribute to make the font bold when a facet is select. PLEASE FIXME!
             #}
-            <a href="{{ facet.url_disabled }}" data-count="{{ facet.count }}" class="checked">{{ facet.name }}<i class="icon-check"></i></a>
+            <a href="{{ facet.urls.disabled }}" data-count="{{ facet.count }}" class="checked">{{ facet.name }}<i class="icon-check"></i></a>
           {% else %}
-            <a href="{{ facet.url_enabled }}" data-count="{{ facet.count }}">{{ facet.name }}</a>
+            <a href="{{ facet.urls.enabled }}" data-count="{{ facet.count }}">{{ facet.name }}</a>
           {% endif %}
         {% endif %}
         </li>

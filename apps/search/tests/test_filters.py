@@ -71,8 +71,10 @@ class FilterTests(ElasticTestCase):
                 'slug': 'tagged',
                 'count': 2,
                 'enabled': True,
-                'url_enabled': '/en-US/search?topic=tagged',
-                'url_disabled': '/en-US/search'
+                'urls': {
+                    'enabled': '/en-US/search?topic=tagged',
+                    'disabled': '/en-US/search',
+                }
             }
         ])
 

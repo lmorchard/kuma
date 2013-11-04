@@ -31,13 +31,13 @@ class Facet(namedtuple('Facet',
     def pop_page(self, url):
         return str(url.pop_query_param('page', str(self.page)))
 
-    @cached_property
-    def url_enabled(self):
-        return self.pop_page(self.url.merge_query_param('topic', self.slug))
-
-    @cached_property
-    def url_disabled(self):
-        return self.pop_page(self.url.pop_query_param('topic', self.slug))
+    def urls(self):
+        return {
+            'enabled': self.pop_page(
+                self.url.merge_query_param('topic', self.slug)),
+            'disabled': self.pop_page(
+                self.url.pop_query_param('topic', self.slug)),
+        }
 
 
 class DocumentS(S):
