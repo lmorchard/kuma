@@ -894,10 +894,10 @@ class RevisionTests(TestCase):
 
         time.sleep(1)
 
-        r2 = revision(document=d, title='Test reverting',
-                      content='An edit to revert',
-                      comment='This edit gets reverted',
-                      is_approved=True)
+        revision(document=d, title='Test reverting',
+                 content='An edit to revert',
+                 comment='This edit gets reverted',
+                 is_approved=True)
         r.save()
 
         time.sleep(1)
@@ -910,7 +910,6 @@ class RevisionTests(TestCase):
     def test_revert_review_tags(self):
         d, r = doc_rev('Test reverting with review tags')
         r.review_tags.set('technical')
-        old_id = r.id
 
         time.sleep(1)
 
@@ -925,7 +924,8 @@ class RevisionTests(TestCase):
         reverted_tags = [t.name for t in reverted.review_tags.all()]
         ok_('technical' in reverted_tags)
         ok_('editorial' not in reverted_tags)
-        
+
+
 class RelatedDocumentTests(TestCase):
     fixtures = ['test_users.json', 'wiki/documents.json']
 

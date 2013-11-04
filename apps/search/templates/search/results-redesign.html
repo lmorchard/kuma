@@ -4,8 +4,8 @@
                ('WT.oss_r', num_results)) %}
 {% set result_fold_limit = 3 %}
 {% block title %}
-  {% if search_query %}
-    {{ page_title(_('Search Results for "{search_query}"')|f(search_query=search_query)) }}
+  {% if query %}
+    {{ page_title(_('Search Results for "{query}"')|f(query=query)) }}
   {% else %}
     {{ page_title(_('Search')) }}
   {% endif %}
@@ -14,16 +14,14 @@
 {% block bodyclass %}search-results search-results-no-demo{% endblock %}
 
 {% macro doc_block(doc, index) -%}
-  {% set doc_url = '%s%s' % (settings.SITE_URL, url('wiki.document', doc.slug, locale=doc.locale)) %}
-  {% set more_class = 'closed' if index > result_fold_limit and current_page == 1 else '' %}
+  {% set more_class = 'closed' if index > result_fold_limit and page == 1 else '' %}
   <li class="result-{{ index }} {{ more_class }}">
     <div class="column-container">
       <div class="column-1"><i class="icon-file-text-alt"></i></div>
       <div class="column-5 result-list-item">
-        {# <h4 class="larger"><a href="{{ doc_url }}?search={{ search_query }}">{{ doc.title }}</a></h4> #}
-        <h4 class="larger"><a href="{{ doc_url }}">{{ doc.title }}</a></h4>
-        <p>{{ doc.get_excerpt()|safe }}</p>
-        <p class="search-meta"><a href="{{ doc_url }}">{{ doc_url|replace('https://', '') }}</a></p>
+        <h4 class="larger"><a href="{{ doc.url }}">{{ doc.title }}</a></h4>
+        <p>{{ doc.excerpt|safe }}</p>
+        <p class="search-meta"><a href="{{ doc.url }}">{{ doc.url|replace('https://', '') }}</a></p>
       </div>
       <div class="column-strip result-list-link">
         <a href=""><i class="icon-code"></i>{{ _('Code Sample') }}</a>
@@ -37,7 +35,6 @@
  {% block content %}
  <div class="column-container">
 
-    {% if search_query %}
     <!-- left results -->
     <div class="column-main">
 
@@ -45,11 +42,17 @@
         <div class="search-pane search-results-explanation">
           <h2>{{ _('Results') }}</h2>
           <p>
-          {% trans locale_native = settings.LOCALES[request.locale].native %}
-            {{ result_count }} Results for "{{ search_query }}" in {{ locale_native }}.
-          {% endtrans %}
+          {% if query %}
+            {% trans locale_native = settings.LOCALES[request.locale].native %}
+              {{ count }} documents for "{{ query }}" in {{ locale_native }}.
+            {% endtrans %}
+          {% else %}
+            {% trans locale_native = settings.LOCALES[request.locale].native %}
+              {{ count }} documents in {{ locale_native }}.
+            {% endtrans %}
+          {% endif %}
           {% if request.locale != settings.LANGUAGE_CODE %}
-            <a href="{{ url('search', locale=settings.LANGUAGE_CODE, ) }}?q={{ search_query }}">
+            <a href="{{ url('search', locale=settings.LANGUAGE_CODE, ) }}?q={{ query }}">
               {% trans default_locale_native = settings.LOCALES[settings.LANGUAGE_CODE].native %}
               Search again in {{ default_locale_native }}
               {% endtrans %}
@@ -59,33 +62,33 @@
         </div>
       </div>
 
-      {% if result_count %}
+      {% if count %}
       <div class="search-pane seach-results-container">
         <h3><i class="icon-copy"></i>{{ _('Docs') }}</h3>
 
         <ul class="result-list">
-          {% for doc in results %}
+          {% for doc in documents %}
                 {{ doc_block(doc, loop.index) }}
               {% endfor %}
         </ul>
 
-        {% set show_expander = current_page == 1 and result_count > result_fold_limit %}
+        {% set show_expander = page == 1 and count > result_fold_limit %}
         <div class="search-results-more {% if show_expander %}with-view-all{% endif %}">
 
           {% if show_expander %}
           {% trans %}
-            <a href="javascript:;" class="view-all">View all {{ result_count }} <i class="icon-caret-down"></i></a>
+            <a href="javascript:;" class="view-all">View all {{ count }} <i class="icon-caret-down"></i></a>
           {% endtrans %}
           {% endif %}
 
           <div class="pager">
-            {% if prev_page %}
-              <a class="button" href="{{ request.get_full_path()|urlparams(page=prev_page) }}">
+            {% if previous %}
+              <a class="button" href="{{ previous }}">
               {{ _('Previous Page') }}
               </a>
             {% endif %}
-            {% if next_page %}
-              <a class="button" href="{{ request.get_full_path()|urlparams(page=next_page) }}">
+            {% if next %}
+              <a class="button" href="{{ next }}">
               {{ _('Next Page') }}
               </a>
             {% endif %}
@@ -147,21 +150,26 @@
       {% endif %}
     </div>
 
-    {% if facet_counts %}
+    {% if facets %}
     <!-- right topics -->
     <div class="column-strip search-results-topics">
       <h3><i class="icon-th-list"></i>{{ _('Topics') }}</h3>
       <ul>
-        {% for facet in facet_counts %}
+        {% for facet in facets %}
         <li>
-        {% if facet.deselect_url %}
-          {#
-            if face.deselect_url is available that means the facet is applied and should somehow indicate that to the user.
-            here I'm using a blasphemous style attribute to make the font bold when a facet is select. PLEASE FIXME!
-          #}
-          <a href="{{ facet.deselect_url }}" data-count="{{ facet.count }}" class="checked">{{ facet.label }}<i class="icon-check"></i></a>
+        {% if facet.count == 0 %}
+        {# TODO This use of an inline style obviously needs to be fixed. #}
+        <a href="#" style="color: lightgrey;">{{ facet.name }}</a>
         {% else %}
-          <a href="{{ facet.select_url }}" data-count="{{ facet.count }}">{{ facet.label }}</a>
+          {% if facet.enabled %}
+            {#
+              if face.url_disabled is available that means the facet is applied and should somehow indicate that to the user.
+              here I'm using a blasphemous style attribute to make the font bold when a facet is select. PLEASE FIXME!
+            #}
+            <a href="{{ facet.url_disabled }}" data-count="{{ facet.count }}" class="checked">{{ facet.name }}<i class="icon-check"></i></a>
+          {% else %}
+            <a href="{{ facet.url_enabled }}" data-count="{{ facet.count }}">{{ facet.name }}</a>
+          {% endif %}
         {% endif %}
         </li>
         {% endfor %}
@@ -169,7 +177,6 @@
     </div>
     {% endif %}
 
-  {% endif %}
 </div>
 {% endblock %}
 

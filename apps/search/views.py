@@ -1,146 +1,149 @@
-import re
 import json
+from collections import namedtuple
+from operator import attrgetter
 
 from django.contrib.sites.models import Site
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.views.decorators.cache import cache_page
+from django.utils.functional import cached_property
+from django.utils.datastructures import SortedDict
 
+from elasticutils.contrib.django import S
+from rest_framework.generics import ListAPIView
+from rest_framework.renderers import TemplateHTMLRenderer, JSONRenderer
+from tower import ugettext_lazy as _lazy
 from waffle import flag_is_active
-
-from urlobject import URLObject
 
 from wiki.models import DocumentType
 
-from .forms import SearchForm
+from .filters import (LanguageFilterBackend, StoredFilterBackend,
+                      SearchQueryBackend, HighlightFilterBackend)
+from .models import Filter
+from .serializers import SearchSerializer, DocumentSerializer, FilterSerializer
+from .utils import QueryURLObject
 
 
-def jsonp_is_valid(func):
-    func_regex = re.compile(r'^[a-zA-Z_\$][a-zA-Z0-9_\$]*'
-        + r'(\[[a-zA-Z0-9_\$]*\])*(\.[a-zA-Z0-9_\$]+(\[[a-zA-Z0-9_\$]*\])*)*$')
-    return func_regex.match(func)
+class Facet(namedtuple('Facet',
+                       ['name', 'slug', 'count', 'url', 'page', 'enabled'])):
+    __slots__ = ()
+
+    def pop_page(self, url):
+        return str(url.pop_query_param('page', str(self.page)))
+
+    @cached_property
+    def url_enabled(self):
+        return self.pop_page(self.url.merge_query_param('topic', self.slug))
+
+    @cached_property
+    def url_disabled(self):
+        return self.pop_page(self.url.pop_query_param('topic', self.slug))
 
 
-def pop_param(url, name, value):
+class DocumentS(S):
     """
-    Takes an URLObject instance and removes the parameter with the given
-    name and value -- if it exists.
+    This S object acts more like Django's querysets to better match
+    the behavior of restframework's serializers.
     """
-    param_dict = {}
-    for param_name, param_values in url.query.multi_dict.items():
-        if param_name == name:
-            for param_value in param_values:
-                if param_value != value:
-                    param_dict.setdefault(param_name, []).append(param_value)
-        else:
-            param_dict[param_name] = param_values
-    return url.del_query_param(name).set_query_params(param_dict)
+    def __init__(self, *args, **kwargs):
+        self.url = kwargs.pop('url', None)
+        self.current_page = kwargs.pop('current_page', None)
+        self.filters = kwargs.pop('filters', None)
+        self.topics = kwargs.pop('topics', None)
+        super(DocumentS, self).__init__(*args, **kwargs)
 
+    def _clone(self, next_step=None):
+        new = super(DocumentS, self)._clone(next_step)
+        new.url = self.url
+        new.current_page = self.current_page
+        new.filters = self.filters
+        new.topics = self.topics
+        return new
 
-def merge_param(url, name, value):
-    """
-    Takes an URLObject instance and adds a query parameter with the
-    given name and value -- but prevents duplication.
-    """
-    param_dict = url.query.multi_dict
-    if name in param_dict:
-        for param_name, param_values in param_dict.items():
-            if param_name == name:
-                if value not in param_values:
-                    param_values.append(value)
-            param_dict[param_name] = param_values
-    else:
-        param_dict[name] = value
-    return url.set_query_params(param_dict)
+    def all(self):
+        """
+        The serializer calls the ``all`` method for "all items" of the queryset,
+        while elasticutils considers the method to return "all results" of the
+        search, which ignores pagination etc.
 
+        Iterating over self is the same as in Django's querysets' all method.
+        """
+        return self
 
-def search(request, page_count=10):
-    """Performs search or displays the search form."""
-
-    # Google Custom Search results page
-    if not flag_is_active(request, 'elasticsearch'):
-        query = request.GET.get('q', '')
-        return render(request, 'landing/searchresults.html', {'query': query})
-
-    search_form = SearchForm(request.GET or None)
-
-    context = {
-        'search_form': search_form,
-        'current_page': 1,
-    }
-
-    if search_form.is_valid():
-        search_query = search_form.cleaned_data.get('q', None)
-
-        or_dict = {}
-        for field in ['title', 'content', 'summary']:
-            or_dict[field + '__text'] = search_query
-
-        results = (DocumentType.search()
-                               .query(or_=or_dict)
-                               .filter(locale=request.locale)
-                               .highlight(*DocumentType.excerpt_fields)
-                               .facet('tags'))
-
-        filtered_topics = search_form.cleaned_data.get('topic', [])
-
-        if filtered_topics:
-            results = results.filter(tags=filtered_topics)
-
-        result_count = results.count()
-
-        # Pagination
-        current_page = search_form.cleaned_data['page']
-        start = page_count * (current_page - 1)
-        end = start + page_count
-        results = results[start:end]
-
-        url = URLObject(request.get_full_path())
-
-        # {u'tags': [{u'count': 1, u'term': u'html'}]}
-        # then we go through the returned facets and match the items with
-        # the allowed filters
-        facet_counts = []
-        topic_choices = search_form.topic_choices()
-        for result_facet in results.facet_counts().get('tags', []):
-            allowed_filter = topic_choices.get(result_facet['term'], None)
-            if allowed_filter is None:
+    def facet_list(self):
+        facets = []
+        url = QueryURLObject(self.url)
+        for slug, facet in self.facet_counts().items():
+            if not isinstance(facet, dict):
+                # let's just blankly ignore any non-filter or non-query facets
                 continue
+            filter_ = self.filters.get(slug, None)
+            if filter_ is None:
+                name = slug
+            else:
+                name = filter_['name']
+            facet = Facet(url=url,
+                          page=self.current_page,
+                          name=name,
+                          slug=slug,
+                          count=facet.get('count', 0),
+                          enabled=slug in self.topics)
+            facets.append(facet)
+        # return a sorted set of facets here
+        return sorted(facets, key=attrgetter('name'))
 
-            select_url = merge_param(url, 'topic', result_facet['term'])
-            select_url = pop_param(select_url, 'page', str(current_page))
 
-            facet_updates = {
-                'label': allowed_filter,
-                'select_url': select_url,
-            }
-            if result_facet['term'] in url.query.multi_dict.get('topic', []):
-                deselect_url = pop_param(url, 'topic', result_facet['term'])
-                deselect_url = pop_param(deselect_url, 'page',
-                                         str(current_page))
-                result_facet['deselect_url'] = deselect_url
+class SearchView(ListAPIView):
+    http_method_names = ['get']
+    serializer_class = DocumentSerializer
+    renderer_classes = (
+        TemplateHTMLRenderer,
+        JSONRenderer,
+    )
+    #: list of filters to applies in order of listing, each implementing
+    #: the specific search feature
+    filter_backends = (
+        LanguageFilterBackend,
+        SearchQueryBackend,
+        HighlightFilterBackend,
+        StoredFilterBackend,
+    )
+    paginate_by = 10
+    max_paginate_by = 100
+    paginate_by_param = 'per_page'
+    pagination_serializer_class = SearchSerializer
+    topic_param = 'topic'
 
-            facet_counts.append(dict(result_facet, **facet_updates))
+    @cached_property
+    def drilldown_faceting(self):
+        return flag_is_active(self.request, 'search_drilldown_faceting')
 
-        context.update({
-            'results': results,
-            'search_query': search_query,
-            'result_count': result_count,
-            'facet_counts': facet_counts,
-            'current_page': current_page,
-            'prev_page': current_page - 1 if start > 0 else None,
-            'next_page': current_page + 1 if end < result_count else None,
-        })
+    @cached_property
+    def stored_filters(self):
+        return FilterSerializer(Filter.objects.all(), many=True).data
 
-    else:
-        search_query = ''
-        result_count = 0
+    @cached_property
+    def current_topics(self):
+        seen = set()
+        topics = self.request.QUERY_PARAMS.getlist(self.topic_param, [])
+        return [topic
+                for topic in topics
+                if topic not in seen and not seen.add(topic)]
 
-    template = 'results.html'
-    if flag_is_active(request, 'redesign'):
-        template = 'results-redesign.html'
+    def get_template_names(self):
+        return ['search/results-redesign.html']
 
-    return render(request, 'search/%s' % template, context)
+    def get_queryset(self):
+        return DocumentS(
+            DocumentType,
+            url=self.request.get_full_path(),
+            current_page=self.request.QUERY_PARAMS.get(self.page_kwarg, 1),
+            filters=SortedDict((filter['slug'], filter)
+                               for filter in self.stored_filters),
+            topics=self.current_topics
+        )
+
+search = SearchView.as_view()
 
 
 @cache_page(60 * 15)  # 15 minutes.
@@ -161,6 +164,7 @@ def suggestions(request):
 def plugin(request):
     """Render an OpenSearch Plugin."""
     site = Site.objects.get_current()
-    return render(request, 'search/plugin.html',
-                        {'site': site, 'locale': request.locale},
-                        content_type='application/opensearchdescription+xml')
+    return render(request, 'search/plugin.html', {
+        'site': site,
+        'locale': request.locale
+    }, content_type='application/opensearchdescription+xml')

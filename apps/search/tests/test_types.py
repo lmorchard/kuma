@@ -6,7 +6,7 @@ from wiki.models import DocumentType
 
 
 class DocumentTypeTests(ElasticTestCase):
-    fixtures = ['wiki/documents.json', 'test_users.json']
+    fixtures = ['test_users.json', 'wiki/documents.json']
 
     def test_get_excerpt_strips_html(self):
         self.refresh()
@@ -28,8 +28,7 @@ class DocumentTypeTests(ElasticTestCase):
         for doc in results:
             excerpt = doc.get_excerpt()
             eq_('audio is in this but the word for tough things'
-                ' will be ignored'
-                , excerpt)
+                ' will be ignored', excerpt)
 
     def test_current_locale_results(self):
         self.refresh()

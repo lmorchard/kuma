@@ -1724,7 +1724,6 @@ class DocumentDeletionLog(models.Model):
 
 @register_mapping_type
 class DocumentType(SearchMappingType, Indexable):
-
     excerpt_fields = ['summary', 'content']
 
     @classmethod
@@ -1757,7 +1756,7 @@ class DocumentType(SearchMappingType, Indexable):
             'locale': {'type': 'string', 'index': 'not_analyzed'},
             'modified': {'type': 'date'},
             'content': {'type': 'string', 'analyzer': 'wikiMarkup'},
-            'tags': {'type': 'string', 'analyzer': 'snowball'},
+            'tags': {'type': 'string', 'index': 'not_analyzed'},
         }
 
     @classmethod
@@ -1781,23 +1780,22 @@ class DocumentType(SearchMappingType, Indexable):
             }
         }
 
-    def get_excerpt(self):
-        def bleach_matches(matches):
-            bleached_matches = []
-            for match in matches:
-                bleached_matches.append(bleach.clean(match,
-                                                     tags=['em'],
-                                                     strip=True))
-            return bleached_matches
+    def _bleach_matches(self, matches):
+        bleached_matches = []
+        tags = ['em']
+        for match in matches:
+            bleached_matches.append(bleach.clean(match, tags=tags, strip=True))
+        return bleached_matches
 
-        stripped_matches = []
+    def get_excerpt(self):
         for field in self.excerpt_fields:
             if field in self._highlight:
-                stripped_matches = bleach_matches(self._highlight[field])
-                return u'...'.join(stripped_matches)
-        if not stripped_matches:
-            return self.summary
-        return u'...'.join(stripped_matches)
+                return u'...'.join(self._bleach_matches(self._highlight[field]))
+        return self.summary
+
+    def get_url(self):
+        path = reverse('wiki.document', locale=self.locale, args=[self.slug])
+        return '%s%s' % (settings.SITE_URL, path)
 
 
 class DocumentZone(models.Model):

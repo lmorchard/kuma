@@ -470,6 +470,7 @@ INSTALLED_APPS = (
 
     # migrations
     'south',
+    'rest_framework',
 
     # testing.
     'django_nose',
