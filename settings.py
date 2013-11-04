@@ -464,6 +464,7 @@ INSTALLED_APPS = (
     'djcelery',
     'taggit',
     'raven.contrib.django.raven_compat',
+    'dbgettext',
 
     'dashboards',
     'kpi',
@@ -520,7 +521,6 @@ DOMAIN_METHODS = {
         ('apps/access/**', 'ignore'),
         ('apps/dashboards/**', 'ignore'),
         ('apps/kadmin/**', 'ignore'),
-        ('apps/search/**', 'ignore'),
         ('apps/sumo/**', 'ignore'),
         ('apps/**.py',
             'tower.management.commands.extract.extract_tower_python'),
@@ -1185,3 +1185,6 @@ TEAMWORK_BASE_POLICIES = {
 
 GRAPPELLI_ADMIN_TITLE = 'Mozilla Developer Network - Admin'
 GRAPPELLI_INDEX_DASHBOARD = 'admin_dashboard.CustomIndexDashboard'
+
+DBGETTEXT_PATH = 'apps/'
+DBGETTEXT_ROOT = 'translations'
