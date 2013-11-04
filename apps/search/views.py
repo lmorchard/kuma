@@ -81,7 +81,8 @@ class DocumentS(S):
             if filter_ is None:
                 name = slug
             else:
-                name = filter_['name']
+                # Let's check if we can get the name from the gettext catalog
+                name = _lazy(filter_['name'])
             facet = Facet(url=url,
                           page=self.current_page,
                           name=name,
