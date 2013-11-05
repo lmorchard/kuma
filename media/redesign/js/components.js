@@ -9,10 +9,10 @@
   $.fn.mozMenu = function(options) {
 
     var settings = $.extend({
-      showDelay: 500,
-      hideDelay: 500,
+      showDelay: 100,
+      hideDelay: 100,
       submenu: null,
-      focusOnOpen: true,
+      focusOnOpen: false,
       brickOnClick: false,
       onOpen: function(){},
       onClose: function() {}
@@ -27,9 +27,10 @@
       var initialized;
 
       // Brick on click?
-      if(settings.brickOnClick) {
+      var brick = settings.brickOnClick;
+      if(brick) {
         $self.on('click', function(e) {
-          e.preventDefault();
+          if(typeof brick != 'function' || brick(e)) e.preventDefault();
         });
       }
 
@@ -101,7 +102,7 @@
 
         // Show my submenu after the showDelay
         showTimeout = setTimeout(function() {
-          $submenu.addClass('open').fadeIn();
+          $submenu.addClass('open').attr('aria-hidden', 'false').fadeIn();
 
           // Find the first link for improved usability
           if(settings.focusOnOpen) {
@@ -128,7 +129,7 @@
     // Closes a given submenu
     function closeSubmenu($sub) {
       closeTimeout = setTimeout(function() {
-        $sub && $sub.removeClass('open').fadeOut();
+        $sub && $sub.removeClass('open').attr('aria-hidden', 'true').fadeOut();
         settings.onClose();
       }, settings.hideDelay);
     }
@@ -247,7 +248,9 @@
       }
 
       function setIcon($tog, $li) {
-        $tog.find('i').attr('class', 'icon-caret-'  + (getState($li) ? 'up' : 'down'));
+        var openIcon = $tog.attr('data-open-icon') || 'icon-caret-right';
+        var closedIcon = $tog.attr('data-closed-icon') || 'icon-caret-down';
+        $tog.find('i').attr('class', (getState($li) ? openIcon : closedIcon));
       }
 
       function getState($li) {

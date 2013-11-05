@@ -1,29 +1,69 @@
 @import 'vars'
 @import 'mixins'
+@import 'grid'
 
-.section-demos
-  background #c0c4c8
+html {
+  background: url('/media/img/bg-content.png') repeat fixed 0% 0% #f6f6f1;
+}
 
-  main
-    background transparent
+.section-demos {
+  background: #c0c4c8;
+  min-width: 0;
 
-  &:not(.devderby) 
-    override-main-nav-color(#fff)
+  use-white-logo();
 
-    #main-header
-      .logo
-        background url('/media/redesign/img/mdn_logo-wordmark-full_white.svg') 0 0 no-repeat
+  main {
+    background: transparent;
+  }
 
-      .search-wrap
-        background-color rgba(255, 255, 255, 0.2)
+  &:not(.devderby) {
+    override-main-nav-color(#fff);
 
-        &, input, .search-trigger
-          color #fff !important
+    #main-header {
 
+      .search-wrap {
+        background-color: rgba(255, 255, 255, 0.2);
+
+        &, input, .search-trigger {
+          color: #fff !important;
+        }
+      }
+    }
+  }
+
+
+  /* dev derby landing - legacy offsets */
+  &.devderby.landing {
+
+    main {
+      .center {
+        max-width: 980px; /* bandaid to keep the page looking good in the redesign */
+      }
+    }
+
+    .main, .sub {
+      float: left;
+    }
+
+    .main {
+      @extend .column-main;
+    }
+
+    .sub {
+      @extend .column-strip;
+    }
+
+    #challenge-prizes {
+      padding: 0;
+    }
+  }
 
   /* remove ugly button styles */
-  .button, button
-    compat-important(box-shadow, none)
+  .button, button {
+    compat-important(box-shadow, none);
+  }
+}
 
-#demostudio.landing, #demostudio.detail
-  compat-important(background-position, center 0px)
+#demostudio.landing, #demostudio.detail {
+  compat-important(background-position, center 0px);
+}

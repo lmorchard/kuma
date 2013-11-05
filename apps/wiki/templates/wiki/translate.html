@@ -139,6 +139,10 @@
                   <input id="tagit_tags" type="text" name="tags" value="" maxlength="255" />
                 {% endif %}
               </section>
+              <section class="page-tags">
+                <h2>{{_('Localization flags')}}</h2>
+                {{ revision_form.localization_tags|safe }}
+              </section>
           </section>
 
           {% include 'wiki/includes/revision_comment.html' %}
@@ -163,7 +167,7 @@
   
   <script src="{{ MEDIA_URL }}js/libs/ckeditor/ckeditor.js?build={{ BUILD_ID_JS }}"></script>
   <script src="{{ MEDIA_URL }}js/libs/ckeditor/adapters/jquery.js?build={{ BUILD_ID_JS }}"></script>
-  <script src="{{ MEDIA_URL }}js/wiki_ckeditor_translate.js?build={{ BUILD_ID_JS }}"></script>
-
+  <script src="{{ MEDIA_URL }}redesign/js/wiki-editor.js?build={{ BUILD_ID_JS }}"></script> 
+  
   {{ js('wiki-edit') }}
 {% endblock %}

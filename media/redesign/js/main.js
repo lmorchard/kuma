@@ -5,14 +5,29 @@ document.documentElement.className += ' js';
 
 (function($) {
 
-  var isOldIE = $('#oldIE').length;
+  /*
+    Some quick feature testing up front
+  */
+  var isOldIE = $('#feature-test-old-ie').length;
+  (function() {
+    // This DIV will have a different z-index based on device width
+    // This is changed via media queries supported via MDN
+    var $div = $('<div id="feature-test-element"></div>').appendTo(document.body);
+    window.mdn.features.getDeviceState = function() {
+      return $div.css('z-index');
+    };
+  })();
 
   /*
     Main menu
   */
   (function() {
     var $mainItems = $('#main-nav > ul > li');
-    $mainItems.find('> a').mozMenu();
+    $mainItems.find('> a').mozMenu({
+      brickOnClick: function(e) {
+        return e.target.tagName == 'I';
+      }
+    });
     $mainItems.find('.submenu').mozKeyboardNav();
   })();
 
@@ -39,34 +54,29 @@ document.documentElement.className += ' js';
               $navItems.css('display', 'none');
               $searchWrap.addClass('expanded');
               $nav.addClass('expand');
+              setTimeout(function() { 
+                $input.attr('placeholder', $input.attr('data-placeholder'));
+                $input.val($input.attr('data-value'));
+              }, 100);
             });
           }
           else {
             $nav.removeClass('expand');
+            $input.attr('placeholder', '');
+            $input.attr('data-value', $input.val());
+            $input.val('');
             timeout = setTimeout(function() {
               $searchWrap.removeClass('expanded');
               $navItems.fadeIn(400);
-            } , 500)
+            } , 500);
           }
         }, delay);
-      }
+      };
     };
 
     $input.
       on('focus', createExpander(200, true)).
-      on('blur', createExpander(600)).
-      on('keypress change', function() {
-        $input[($input.val() != '' ? 'add' : 'remove') + 'Class']('has-value');
-      });
-
-    $nav.find('.search-trigger').on('focus click mouseenter', function() {
-      // Adding timeout so the element isn't too responsive
-      setTimeout(function() {
-        $input.css('display', ''); 
-        createExpander(200, true)();
-        $input.get(0).select();
-      }, 100);
-    });
+      on('blur', createExpander(600));
   })();
 
   /*
@@ -86,6 +96,12 @@ document.documentElement.className += ' js';
       });
       return false;
     }
+  });
+
+  /* Skip to search is better done with JS because it's sometimes hidden and shown */
+  $('#skip-search').on('click', function(e) {
+    e.preventDefault();
+    $('input[name=q]').last().get(0).focus();
   });
 
 })(jQuery);

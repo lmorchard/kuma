@@ -36,8 +36,6 @@ def home(request):
 
     return render(request, 'landing/homepage.html',
                   {'demos': demos, 'updates': updates,
-                   'num_languages': len(settings.MDN_LANGUAGES),
-                   'num_users': len(User.objects.all()),
                     'current_challenge_tag_name': 
                     str(constance.config.DEMOS_DEVDERBY_CURRENT_CHALLENGE_TAG).strip()})
 
@@ -159,7 +157,7 @@ def waffles(request):
 
     flag_json = []
     for flag in flags:
-        if flag.note:
+        if flag_is_active(request, flag.name):
             flag_json.append({
                 'name': str(flag.name),
                 'note': str(flag.note)
@@ -182,12 +180,3 @@ def common_landing(request, section=None, extra=None):
         data.update(extra)
 
     return render(request, 'landing/%s.html' % section.short, data)
-
-def redesign_zone(request):
-    return render(request, 'redesign-stubs/zone-landing.html')
-def redesign_zone_article(request):
-    return render(request, 'redesign-stubs/zone-article.html')
-def redesign_article(request):
-    return render(request, 'redesign-stubs/article.html')
-def redesign_results(request):
-    return render(request, 'redesign-stubs/search-results.html')

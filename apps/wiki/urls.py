@@ -1,4 +1,5 @@
 from django.conf.urls import include, patterns, url
+from django.views.generic import TemplateView
 
 from sumo.views import redirect_to
 from wiki.feeds import (DocumentsRecentFeed, DocumentsReviewFeed, RevisionsFeed,
@@ -32,6 +33,15 @@ document_patterns = patterns('wiki.views',
     url(r'^\$repair_breadcrumbs$',
         'repair_breadcrumbs',
         name='wiki.repair_breadcrumbs'),
+    url(r'^\$delete$',
+        'delete_document',
+        name='wiki.delete_document'),
+    url(r'^\$restore$',
+        'restore_document',
+        name='wiki.restore_document'),
+    url(r'^\$purge$',
+        'purge_document',
+        name='wiki.purge_document'),
 
     # Un/Subscribe to document edit notifications.
     url(r'^\$watch$', 'watch_document', name='wiki.document_watch'),
@@ -68,6 +78,10 @@ urlpatterns += patterns('wiki.views',
     url(r'^/new$', 'new_document', name='wiki.new_document'),
     url(r'^/all$', 'list_documents', name='wiki.all_documents'),
     url(r'^/preview-wiki-content$', 'preview_revision', name='wiki.preview'),
+
+    url(r'^/move-requested$',
+        TemplateView.as_view(template_name='wiki/move_requested.html'),
+        name='wiki.move_requested'),
     
     url(r'^/get-documents$', 'autosuggest_documents', name='wiki.autosuggest_documents'),
     url(r'^/external-signup$', 'external_signup', name='wiki.external_signup'),

@@ -2,7 +2,6 @@
 {% extends "search/base.html" %}
 {% set meta = (('WT.oss', q),
                ('WT.oss_r', num_results)) %}
-{% set result_fold_limit = 3 %}
 {% block title %}
   {% if query %}
     {{ page_title(_('Search Results for "{query}"')|f(query=query)) }}
@@ -14,8 +13,7 @@
 {% block bodyclass %}search-results search-results-no-demo{% endblock %}
 
 {% macro doc_block(doc, index) -%}
-  {% set more_class = 'closed' if index > result_fold_limit and page == 1 else '' %}
-  <li class="result-{{ index }} {{ more_class }}">
+  <li class="result-{{ index }}">
     <div class="column-container">
       <div class="column-1"><i class="icon-file-text-alt"></i></div>
       <div class="column-5 result-list-item">
@@ -33,8 +31,17 @@
 
 
  {% block content %}
- <div class="column-container">
 
+  <div class="results-search-form">
+    <form action="{{ url('search') }}" method="get">
+      <label for="search-q" class="offscreen">{{ _('Search') }}</label>
+      <input type="search" name="q" id="search-q" placeholder="{{ _('Search the docs') }}" value="{{ query }}" {% if not query %}autofocus{% endif %} />
+      <button type="submit" class="offscreen">{{ _('Search') }}</button>
+    </form>
+  </div>
+
+
+ <div class="column-container">
     <!-- left results -->
     <div class="column-main">
 
@@ -42,17 +49,28 @@
         <div class="search-pane search-results-explanation">
           <h2>{{ _('Results') }}</h2>
           <p>
-          {% if query %}
-            {% trans locale_native = settings.LOCALES[request.locale].native %}
-              {{ count }} documents for "{{ query }}" in {{ locale_native }}.
-            {% endtrans %}
-          {% else %}
-            {% trans locale_native = settings.LOCALES[request.locale].native %}
-              {{ count }} documents in {{ locale_native }}.
-            {% endtrans %}
+          {% trans count=count, locale_native=settings.LOCALES[request.locale].native %}
+            {{ count }} search result for "{{ query }}" in {{ locale_native }}.
+          {% pluralize %}
+            {{ count }} search results for "{{ query }}" in {{ locale_native }}.
+          {% endtrans %}
+
+          {% if count %}
+            &middot;
+            {% if not previous and not next %}
+              {{ _('Displaying all results.') }}
+            {% else %}
+              {% trans count=count %}
+                Displaying {{ count }} search result.
+              {% pluralize %}
+                Displaying {{ start }}-{{ end }} of {{ count }} search results.
+              {% endtrans %}
+            {% endif %}
           {% endif %}
+
           {% if request.locale != settings.LANGUAGE_CODE %}
-            <a href="{{ url('search', locale=settings.LANGUAGE_CODE, ) }}?q={{ query }}">
+            &middot;
+            <a href="{{ url('search', locale=settings.LANGUAGE_CODE, ) }}?q={{ qyery }}">
               {% trans default_locale_native = settings.LOCALES[settings.LANGUAGE_CODE].native %}
               Search again in {{ default_locale_native }}
               {% endtrans %}
@@ -68,18 +86,11 @@
 
         <ul class="result-list">
           {% for doc in documents %}
-                {{ doc_block(doc, loop.index) }}
-              {% endfor %}
+            {{ doc_block(doc, loop.index) }}
+          {% endfor %}
         </ul>
 
-        {% set show_expander = page == 1 and count > result_fold_limit %}
         <div class="search-results-more {% if show_expander %}with-view-all{% endif %}">
-
-          {% if show_expander %}
-          {% trans %}
-            <a href="javascript:;" class="view-all">View all {{ count }} <i class="icon-caret-down"></i></a>
-          {% endtrans %}
-          {% endif %}
 
           <div class="pager">
             {% if previous %}
@@ -97,56 +108,6 @@
         </div>
       </div>
 
-      {#
-      <div class="search-pane seach-results-container">
-        <h3><i class="icon-copy"></i>Demos</h3>
-
-        <ul class="result-list">
-          <li>
-            <div class="column-container">
-              <div class="column-1"><i class="icon-file-text-alt"></i></div>
-              <div class="column-5 result-list-item">
-                <h4 class="larger"><a href="">Drag and Drop - DragDrop | MDN</a></h4>
-                <p>3 days ago ... Firefox and other Mozilla applications support a number of features for handling drag and drop. This allows the user to click and hold the mouse ...</p>
-                <p class="search-meta"><a href="">developer.mozilla.org/en-US/docs/DragDrop/Drag_and_Drop</a></p>
-              </div>
-              <div class="column-strip result-list-link">
-                <a href=""><i class="icon-code"></i>Code Sample</a>
-                <a href=""><i class="icon-play-circle"></i>Demo Sample</a>
-              </div>
-            </div>
-          </li>
-          <li>
-            <div class="column-container">
-              <div class="column-1"><i class="icon-file-text-alt"></i></div>
-              <div class="column-5 result-list-item">
-                <h4 class="larger"><a href="">Drag and Drop - DragDrop | MDN</a></h4>
-                <p>3 days ago ... Firefox and other Mozilla applications support a number of features for handling drag and drop. This allows the user to click and hold the mouse ...</p>
-                <p class="search-meta"><a href="">developer.mozilla.org/en-US/docs/DragDrop/Drag_and_Drop</a></p>
-              </div>
-              <div class="column-strip result-list-link">
-                <a href=""><i class="icon-code"></i>Code Sample</a>
-                <a href=""><i class="icon-play-circle"></i>Demo Sample</a>
-              </div>
-            </div>
-          </li>
-          <li>
-            <div class="column-container">
-              <div class="column-1"><i class="icon-file-text-alt"></i></div>
-              <div class="column-5 result-list-item">
-                <h4 class="larger"><a href="">Drag and Drop - DragDrop | MDN</a></h4>
-                <p>3 days ago ... Firefox and other Mozilla applications support a number of features for handling drag and drop. This allows the user to click and hold the mouse ...</p>
-                <p class="search-meta"><a href="">developer.mozilla.org/en-US/docs/DragDrop/Drag_and_Drop</a></p>
-              </div>
-              <div class="column-strip result-list-link">
-                <a href=""><i class="icon-code"></i>Code Sample</a>
-                <a href=""><i class="icon-play-circle"></i>Demo Sample</a>
-              </div>
-            </div>
-          </li>
-        </ul>
-      </div>
-      #}
       {% endif %}
     </div>
 
@@ -178,27 +139,4 @@
     {% endif %}
 
 </div>
-{% endblock %}
-
-
-{% block js %}
-<script>
-  (function($) {
-    var parentSelector = '.search-pane';
-    $(parentSelector + ' .close').on('click', function(e) {
-      e.preventDefault();
-      $('#search-results-close-container').addClass('closed');
-    });
-
-    var $more = $('.search-results-more');
-    $more.find('.view-all').on('click', function(e) {
-      e.preventDefault();
-      var hiddenClass = 'closed';
-      var $parent = $(this).closest(parentSelector);
-      $parent.find('.' + hiddenClass).removeClass(hiddenClass);
-      $parent.find('.pager').removeClass('hidden');
-      $more.removeClass('with-view-all');
-    });
-  })(jQuery);
-</script>
 {% endblock %}

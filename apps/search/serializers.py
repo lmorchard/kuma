@@ -23,6 +23,8 @@ class SearchSerializer(pagination.PaginationSerializer):
     query = SearchQueryField(source='*')
     page = serializers.Field(source='number')
     pages = serializers.Field(source='paginator.num_pages')
+    start = serializers.Field(source='start_index')
+    end = serializers.Field(source='end_index')
     facets = FacetSerializer(source='paginator.object_list.facet_list',
                              many=True)
 

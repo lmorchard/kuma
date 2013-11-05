@@ -77,6 +77,7 @@ class DocumentS(S):
             if not isinstance(facet, dict):
                 # let's just blankly ignore any non-filter or non-query facets
                 continue
+
             filter_ = self.filters.get(slug, None)
             if filter_ is None:
                 name = slug

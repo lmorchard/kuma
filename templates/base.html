@@ -19,12 +19,19 @@
 
       <link rel="search" type="application/opensearchdescription+xml" href="{{ settings.SITE_URL }}/{{ request.locale }}/search/xml" title="{{ _('Mozilla Developer Network') }}" />
 
-
       {% if waffle.flag('redesign') %}
         {{ css('redesign-main') }}
       {% endif %}
 
   {% endblock %}
+{% endmacro %}
+
+{% macro lang_switcher() %}
+{% if not is_sphinx %}
+  {% block lang_switcher %}
+      {% include "includes/lang_switcher.html" %}
+  {% endblock %}
+{% endif %}
 {% endmacro %}
 
 {% macro extrahead() %}
@@ -50,7 +57,7 @@
       <script src="https://login.persona.org/include.js" type="text/javascript"></script>
 
       {% if waffle.flag('redesign') %}
-        <!--[if lte IE 8]><script src="/media/redesign/js/libs/selectivizr-1.0.2/selectivizr-build.js?build={{ BUILD_JS }}"></script><div id="oldIE"></div><![endif]-->
+        <!--[if lte IE 8]><script src="/media/redesign/js/libs/selectivizr-1.0.2/selectivizr-build.js?build={{ BUILD_JS }}"></script><div id="feature-test-old-ie"></div><![endif]-->
       {% endif %}
 
       {{ js('mdn') }}
@@ -98,6 +105,7 @@
 
   <link rel="stylesheet" type="text/css" media="print" href="{{ MEDIA_URL }}redesign/css/print.css" />
 
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta charset="utf-8">
   <meta name="robots" content="index, follow">
   <link rel="home" href="{{ url('home') }}">
@@ -107,7 +115,7 @@
   <!--[if IE]>
   <meta http-equiv="imagetoolbar" content="no" />
   <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-  <script src="{{ settings.SITE_URL }}{{ MEDIA_URL }}js/libs/html5.js"></script>
+  <script src="{{ MEDIA_URL }}js/libs/html5.js"></script>
   <![endif]-->
 
   {% include "includes/config.html" %}
@@ -121,16 +129,23 @@
 <body id="{{ pageid() }}" class="html-{{ DIR }} {{ bodyclass() }}" role="document">
 
   <!-- temporary beta notice -->
-  {% if waffle.flag('redesign_beta_notice') %}
   <div class="redesign-beta-notice"><div class="center">
-    {{ _('<strong>Welcome to the new MDN beta!</strong>  See a problem or have a suggestion?  <a href="https://wiki.mozilla.org/MDN/Development/About_the_2013_redesign">Here\'s how you can help!</a>') }}
+    {{ _('<strong>Welcome to the new MDN beta!</strong>  See a problem or have a suggestion?  <a href="
+https://wiki.mozilla.org/MDN/Development/Redesign/Testing">Here\'s how you can help!</a>') }}
   </div></div>
-  {% endif %}
 
   <!-- Header -->
   <header id="main-header"><div class="center">
     
-    <div class="clear">
+    <ul class="offscreen">
+      <li><a href="#language">{{ _('Select language') }}</a></li>
+      {% if not is_sphinx %}
+        <li><a href="#q" id="skip-search">{{ _('Skip to search') }}</a></li>
+      {% endif %}
+      <li><a href="#content">{{ _('Skip to main content') }}</a></li>
+    </ul>
+    
+    <div class="clear header-login">
       <a href="//www.mozilla.org/" id="tabzilla">mozilla</a>
       {% if not is_sphinx %}
         {% include "includes/login.html" %}
@@ -139,58 +154,49 @@
 
     <a href="{{ url('home') }}" class="logo">{{ _('Mozilla Developer Network') }}</a>
 
-    <nav id="main-nav"><ul><li><a href="">{{ _('Zones') }}</a>
+    <nav id="main-nav" role="navigation"><ul role="menubar"><li><a href="javascript:;" aria-haspopup="true">{{ _('Zones') }}<i class="icon-caret-down"></i></a>
 
-        <div class="submenu">
+        <div class="submenu submenu-single" role="menu" aria-hidden="true">
           <div class="submenu-column">
-            <div class="title">{{ _('Hot Right Now') }}</div>
             <ul>
-              <li><a href="{{ devmo_url('Web/Apps/Apps_Zone') }}?menu">App Center</a></li>
-              <li><a href="">Build the web for beginners again</a></li>
-              <li><a href="">Build the web for beginners again</a></li>
-              <li><a href="">Build the web for beginners again</a></li>
-            </ul>
-          </div><div class="submenu-column">
-            <div class="title">{{ _('Hot Right Now') }}</div>
-            <ul>
-              <li><a href="">Build the web for beginners again</a></li>
-              <li><a href="">Build the web for beginners again</a></li>
-              <li><a href="">Build the web for beginners again</a></li>
-              <li><a href="">Build the web for beginners again</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/Apps') }}?menu">App Center</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Mozilla/Firefox_OS') }}?menu">Firefox OS</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Mozilla/Persona') }}?menu">Persona</a></li>
             </ul>
           </div>
         </div>
-      </li><li><a href="{{ devmo_url('Web') }}">{{ _('Web Platform') }}</a>
+      </li><li><a href="{{ devmo_url('Web') }}" aria-haspopup="true">{{ _('Web Platform') }}<i class="icon-caret-down"></i></a>
 
-        <div class="submenu">
+        <div class="submenu" role="menu" aria-hidden="true">
           <div class="submenu-column">
             <div class="title">{{ _('Technologies') }}</div>
             <ul>
-              <li><a href="{{ devmo_url('Web/HTML') }}?menu">HTML</a></li>
-              <li><a href="{{ devmo_url('Web/CSS') }}?menu">CSS</a></li>
-              <li><a href="{{ devmo_url('Web/JavaScript') }}?menu">JavaScript</a></li>
-              <li><a href="{{ devmo_url('Web/Guide/Graphics') }}?menu">Graphics</a></li>
-              <li><a href="{{ devmo_url('Web/API') }}?menu">APIs / DOM</a></li>
-              <li><a href="{{ devmo_url('Web/App') }}?menu">Apps</a></li>
-              <li><a href="{{ devmo_url('Tools') }}?menu">Dev Tools</a></li>
-              <li><a href="{{ devmo_url('Web/MathML') }}?menu">MathML</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/HTML') }}?menu">HTML</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/CSS') }}?menu">CSS</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/JavaScript') }}?menu">JavaScript</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/Guide/Graphics') }}?menu">Graphics</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/API') }}?menu">APIs / DOM</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/App') }}?menu">Apps</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Tools') }}?menu">Dev Tools</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/MathML') }}?menu">MathML</a></li>
             </ul>
           </div><div class="submenu-column">
             <div class="title">{{ _('References & Guides') }}</div>
             <ul>
-              <li><a href="{{ devmo_url('Web/Tutorials') }}?menu">Tutorials</a></li>
-              <li><a href="{{ devmo_url('Web/Reference') }}?menu">References</a></li>
-              <li><a href="{{ devmo_url('Web/Guide') }}?menu">Developer Guides</a></li>
-              <li><a href="{{ devmo_url('Web/Accessibility') }}?menu">Accessibility</a></li>
-              <li><a href="{{ url('demos') }}?menu">Demos</a></li>
-              <li><a href="{{ url('docs') }}?menu">...more docs</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/Tutorials') }}?menu">Tutorials</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/Reference') }}?menu">References</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/Guide') }}?menu">Developer Guides</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ devmo_url('Web/Accessibility') }}?menu">Accessibility</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ url('demos') }}?menu">Demos</a></li>
+              <li role="menuitem" tabindex="-1"><a href="{{ url('docs') }}?menu">...more docs</a></li>
             </ul>
           </div>
         </div>
       </li><li><a href="{{ devmo_url('Tools') }}">{{ _('Tools') }}</a></li><li><a href="{{ url('demos') }}">{{ _('Demos') }}</a></li>{#<li><a href="">{{ _('Developer Program') }}</a></li>#}{% if not is_sphinx %}<li class="main-nav-search"><form action="{{ url('search') }}">
         <div class="search-wrap">
-          <input type="search" name="q" placeholder="{{ _('Search') }}" value="{{ query }}" />
-          <a href="javascript:;" class="search-trigger"><i class="icon-search"></i></a>
+          <label for="q" class="offscreen">{{ _('Search') }}</label>
+          <input type="search" id="main-q" name="q" data-placeholder="{{ _('SEARCH') }}" data-value="{{ query }}" value="" />
+          <span class="search-trigger"><i class="icon-search"></i></span>&nbsp;
           <button type="submit">{{ _('Search') }}</button>
         </div>
       </form></li>{% endif %}</ul></nav>
@@ -200,7 +206,7 @@
   {% block masthead %}{% endblock %}
 
   <!-- Content will go here -->
-  <main><div class="center">
+  <main id="content"><div class="center">
   {{ page_content() }}
   </div></main>
 
@@ -217,7 +223,7 @@
         </p>
       </div>
       <div class="column-strip">
-        {% include "includes/lang_switcher.html" %}
+        {{ lang_switcher() }}
       </div>
     </div>
   </div></footer>
@@ -432,11 +438,7 @@
       &bull; <a href="//github.com/mozilla/kuma">{{ _('Contribute to the code') }}</a>
       &bull; <a href="//www.mozilla.org/en-US/privacy">{{ _('Privacy Policy') }}</a>
     </div>
-    {% if not is_sphinx %}
-      {% block lang_switcher %}
-          {% include "includes/lang_switcher.html" %}
-      {% endblock %}
-    {% endif %}
+    {{ lang_switcher() }}
 </div>
 </footer>
 

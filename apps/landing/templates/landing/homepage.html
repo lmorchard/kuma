@@ -27,7 +27,9 @@
 
   <div class="home-search-form">
     <form action="{{ url('search') }}" method="get">
-      <input type="search" name="q" placeholder="{{ _('Search the docs') }}" />
+      <label for="home-q" class="offscreen">{{ _('Search') }}</label>
+      <input type="search" id="home-q" name="q" placeholder="{{ _('Search the docs') }}" />
+      <button type="submit" class="offscreen">{{ _('Search') }}</button>
     </form>
   </div> 
 
@@ -46,17 +48,15 @@
       <div class="column-home-features">
         <h3 class="zones"><i class="icon-suitcase"></i><span>{{ _('Zones') }}</span></h3>
         <ul>
-        <li><a href="{{ devmo_url('Web/Apps/Apps_Zone') }}">{{ _('App Center') }}</a></li>
+        <li><a href="{{ devmo_url('Web/Apps') }}">{{ _('App Center') }}</a></li>
         <li><a href="{{ devmo_url('Mozilla/Firefox_OS') }}">{{ _('Firefox OS') }}</a></li>
-        <li><a href="">{{ _('Firefox Marketplace') }}</a></li>
-        <li><a href="{{ devmo_url('Web') }}">{{ _('Web Platform') }}</a></li>
-        <li><a href="">{{ _('more...') }}</a></li>
+        <li><a href="{{ devmo_url('Mozilla/Persona') }}">{{ _('Persona') }}</a></li>
         </ul>
       </div>
       <div class="column-home-features">
         <h3><i class="icon-wrench"></i><span>{{ _('Developer<br />Tools') }}</span></h3>
         <ul>
-        <li><a href="{{ devmo_url('Tools/Firefox_OS_Simulator') }}">{{ _('Firefox OS SImulator') }}</a></li>
+        <li><a href="{{ devmo_url('Tools/Firefox_OS_Simulator') }}">{{ _('Firefox OS Simulator') }}</a></li>
         <li><a href="{{ devmo_url('Tools/Page_Inspector') }}">{{ _('Page Inspector') }}</a></li>
         <li><a href="{{ devmo_url('Tools/Debugger') }}">{{ _('JavaScript Debugger') }}</a></li>
         <li><a href="{{ devmo_url('Tools/Web_Console') }}">{{ _('Web Console') }}</a></li>
@@ -64,8 +64,13 @@
         </ul>
       </div>
       <div class="column-home-features">
-        <h3><i class="icon-certificate"></i><span>{{ _('Developer<br />Program') }}</span></h3>
-        <p>{{ _('More information coming soon.') }}</p>
+        {# <h3><i class="icon-certificate"></i><span>{{ _('Developer<br />Program') }}</span></h3> #}
+        <h3><i class="icon-beaker"></i><span>{{ _('MDN<br />Beta') }}</span></h3>
+        <ul>
+        <li>{{ _('Welcome to the MDN Beta. ') }}</li>
+        <li><a href="
+https://wiki.mozilla.org/MDN/Development/Redesign/Testing">{{ _('Learn how you can help!') }}</a></li>
+        </ul>
       </div>
     </div>
   </div>
@@ -75,7 +80,7 @@
 <!-- callout area -->
 <div class="home-callouts"><div class="column-container center">
   <div class="column-callout callout-apps">
-    <a href="{{ devmo_url('apps') }}"><span>{{ _('Create<br />Web Apps') }}</span><i></i></a>
+    <a href="{{ devmo_url('Web/Apps') }}"><span>{{ _('Create<br />Web Apps') }}</span><i></i></a>
   </div>
   <div class="column-callout callout-android">
     <a href="{{ devmo_url('Mozilla/Firefox_for_Android') }}"><span>{{ _('Develop<br />Firefox for Android') }}</span><i></i></a>
@@ -88,15 +93,14 @@
 <!-- hacks area -->
 <div class="home-hacks"><div class="column-container center">
   <div class="column-hacks">
-    <h2><i class="icon-star"></i> {{ _('Hacks Blog <a href="">read more at hacks.mozilla.org <i class="icon-arrow-right"></i></a>') }}</h2>
+    <h2><i class="icon-star"></i> {{ _('Hacks Blog <a href="http://hacks.mozilla.org">read more at hacks.mozilla.org <i class="icon-arrow-right"></i></a>') }}</h2>
     {{ newsfeed(updates, section_headers=True) }}
-      
   </div>
   <div class="column-involved">
     <div class="home-involved-card"><a href="{{ devmo_url('Project:MDN/Contributing') }}">
       <h3 class="title">{{ _('Get Involved') }}</h3>
 
-      <p class="numbers">{{ _('<span class="row1">Join <span class="number">%s</span> contributors</span> <span class="row2">in <span class="number">%s</span> languages and locales</span> <span class="row3">around the world.</span>') % (num_users|intcomma, num_languages) }}</p>
+      <p class="numbers">{{ _('<span class="row1">Join <span class="number">3,414</span> contributors</span> <span class="row2">in <span class="number">31</span> languages and locales</span> <span class="row3">around the world.</span>') }}</p>
       <p><span class="button">{{ _('Help improve MDN') }}</span></p>
     </a></div>
   </div>
@@ -131,7 +135,7 @@
 
 <!-- contributions section -->
 <div class="home-contribute"><div class="center">
-  <h2><i class="icon-smile"></i> {{ _('How to contribute to MDN') }}</h2>
+  <h2><i class="icon-smile"></i> {{ _('Help improve MDN') }}</h2>
 
   <div class="column-container">
     <div class="column-half">
@@ -139,14 +143,14 @@
     </div>
     <div class="column-half">
       <div class="column-container">
-        <div class="column-strip">
+        <div class="column-half">
           <ul>
           <li><a href="{{ devmo_url('needs-review/editorial') }}">{{ _('Editorial review') }}</a></li>
                 <li><a href="{{ devmo_url('needs-review/technical') }}">{{ _('Technical review') }}</a></li>
                 <li><a href="{{ devmo_url('Project:Getting_started') }}#Create_a_new_page">{{ _('Creating new docs') }}</a></li>
           </ul>
         </div>
-        <div class="column-strip">
+        <div class="column-half">
           <ul>
           <li><a href="{{ devmo_url('Project:Localization_Projects') }}">{{ _('Translating (L10N)') }}</a></li>
                 <li><a href="{{ url('promote') }}">{{ _('Promoting MDN') }}</a></li>

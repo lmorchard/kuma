@@ -30,7 +30,8 @@ class ViewTests(ElasticTestCase):
     def test_search_filters(self):
         response = self.client.get('/en-US/search?q=article')
         eq_(response.status_code, 200)
-        self.assertContains(response, '4 documents for "article" in English')
+        self.assertContains(response,
+                            '4 search results for "article" in English')
 
     def test_stored_filters(self):
 

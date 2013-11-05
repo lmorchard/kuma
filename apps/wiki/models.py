@@ -14,7 +14,7 @@ import jingo
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import serializers
-from django.core.cache import cache
+from django.core.cache import get_cache, cache
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import resolve
 from django.db import models
@@ -318,6 +318,10 @@ REVIEW_FLAG_TAGS = (
 )
 REVIEW_FLAG_TAGS_DEFAULT = ['technical', 'editorial']
 
+LOCALIZATION_FLAG_TAGS = (
+    ('inprogress', _('Localization in Progress')),
+)
+
 # TODO: This is info derived from urls.py, but unsure how to DRY it
 RESERVED_SLUGS = (
     'ckeditor_config.js$',
@@ -343,6 +347,11 @@ DOCUMENT_LAST_MODIFIED_CACHE_KEY_TMPL = u'kuma:document-last-modified:%s'
 
 DEKI_FILE_URL = re.compile(r'@api/deki/files/(?P<file_id>\d+)/=')
 KUMA_FILE_URL = re.compile(r'/files/(?P<file_id>\d+)/.+\..+')
+
+SECONDARY_CACHE_ALIAS = getattr(settings,
+                                'SECONDARY_CACHE_ALIAS',
+                                'secondary')
+URL_REMAPS_CACHE_KEY_TMPL = 'DocumentZoneUrlRemaps:%s'
 
 
 def _inherited(parent_attr, direct_attr):
@@ -472,7 +481,7 @@ class BaseDocumentManager(models.Manager):
             'summary', 'content', 'comment',
             'keywords', 'tags', 'toc_depth', 'significance', 'is_approved',
             'creator',  # HACK: Replaced on import, but deserialize needs it
-            'mindtouch_page_id', 'mindtouch_old_id', 'is_mindtouch_migration',
+            'is_mindtouch_migration',
         )
         serializers.serialize('json', objects, indent=2, stream=stream,
                               fields=fields, use_natural_keys=True)
@@ -664,12 +673,6 @@ class Document(NotificationsMixin, models.Model):
 
     # Whether this page is deleted.
     deleted = models.BooleanField(default=False)
-
-    # HACK: Migration bookkeeping - index by the old_id of MindTouch revisions
-    # so that migrations can be idempotent.
-    mindtouch_page_id = models.IntegerField(null=True, db_index=True,
-                                            help_text="ID for migrated "
-                                                      "MindTouch page")
 
     # Last modified time for the document. Should be equal-to or greater than
     # the current revision's created field
@@ -1132,18 +1135,6 @@ class Document(NotificationsMixin, models.Model):
                      self.natural_cache_key)
         cache.delete(cache_key)
 
-        # Make redirects if there's an approved revision and title or slug
-        # changed. Allowing redirects for unapproved docs would (1) be of
-        # limited use and (2) require making Revision.creator nullable.
-        slug_changed = hasattr(self, 'old_slug')
-        title_changed = hasattr(self, 'old_title')
-        if self.current_revision and slug_changed:
-            self.move()
-            if slug_changed:
-                del self.old_slug
-        if title_changed:
-            del self.old_title
-
     def delete(self, *args, **kwargs):
         if waffle.switch_is_active('wiki_error_on_delete'):
             # bug 863692: Temporary while we investigate disappearing pages.
@@ -1181,32 +1172,91 @@ class Document(NotificationsMixin, models.Model):
         signals.post_save.send(sender=self.__class__,
                                instance=self)
 
-    def move(self, new_slug=None, user=None):
+    def _post_move_redirects(self, new_slug, user, title):
         """
-        Complete the process of moving a page by leaving a redirect
-        behind.
-
+        Create and return a Document and a Revision to serve as
+        redirects once this page has been moved.
+        
         """
-        if new_slug is None:
-            new_slug = self.slug
-        if user is None:
-            user = self.current_revision.creator
-        self.slug = new_slug
-        doc = Document.objects.create(locale=self.locale,
-                                      title=self._attr_for_redirect(
-                                          'title', REDIRECT_TITLE),
-                                      slug=self._attr_for_redirect(
-                                          'slug', REDIRECT_SLUG),
-                                      category=self.category,
-                                      is_localizable=False)
-        Revision.objects.create(document=doc,
-                                content=REDIRECT_CONTENT % dict(
-                                    href=self.get_absolute_url(),
-                                    title=self.title),
+        redirect_doc = Document(locale=self.locale,
+                                title=self.title,
+                                slug=self.slug,
+                                category=self.category,
+                                is_localizable=False)
+        redirect_rev = Revision(content=REDIRECT_CONTENT % {
+                                  'href': reverse('wiki.document',
+                                                  args=[new_slug],
+                                                  locale=self.locale),
+                                  'title': title,
+                                },
                                 is_approved=True,
                                 toc_depth=self.current_revision.toc_depth,
                                 reviewer=self.current_revision.creator,
                                 creator=user)
+        return (redirect_doc, redirect_rev)
+
+    def _moved_revision(self, new_slug, user, title=None):
+        """
+        Create and return a Revision which is a copy of this
+        Document's current Revision, as it will exist at a moved
+        location.
+        
+        """
+        moved_rev = self.current_revision
+
+        # Shortcut trick for getting an object with all the same
+        # values, but making Django think it's new.
+        moved_rev.id = None
+
+        moved_rev.creator = user
+        moved_rev.created = datetime.now()
+        moved_rev.slug = new_slug
+        if title:
+            moved_rev.title = title
+        return moved_rev
+
+    def _post_move_breadcrumbs(self, new_slug, save=True):
+        """
+        Post-move, update this Document's parent_topic if a Document
+        exists at the appropriate slug and locale.
+        
+        """
+        new_slug_bits = new_slug.split('/')
+        new_slug_bits.pop()
+        new_parent = None
+        
+        try:
+            new_parent = Document.objects.get(locale=self.locale,
+                                              slug='/'.join(new_slug_bits))
+        except Document.DoesNotExist:
+            pass
+
+        return new_parent
+        
+    def _move_conflicts(self, new_slug):
+        """
+        Given a new slug to be assigned to this document, check
+        whether there is an existing, non-redirect, Document at that
+        slug in this locale. Any redirect existing there will be
+        deleted.
+
+        This is necessary since page moving is a background task, and
+        a Document may come into existence at the target slug after
+        the move is requested.
+        
+        """
+        existing = None
+        try:
+            existing = Document.objects.get(locale=self.locale,
+                                            slug=new_slug)
+        except Document.DoesNotExist:
+            pass
+
+        if existing is not None:
+            if existing.is_redirect:
+                existing.delete()
+            else:
+                raise Exception("Requested move would overwrite a non-redirect page.")
 
     def _tree_conflicts(self, new_slug):
         """
@@ -1218,7 +1268,7 @@ class Document(NotificationsMixin, models.Model):
         conflicts = []
         try:
             existing = Document.objects.get(locale=self.locale, slug=new_slug)
-            if not existing.redirect_url():
+            if not existing.is_redirect:
                 conflicts.append(existing)
         except Document.DoesNotExist:
             pass
@@ -1238,26 +1288,56 @@ class Document(NotificationsMixin, models.Model):
         Move this page and all its children.
 
         """
+        # Page move is a 10-step process.
+        #
+        # Step 1: Sanity check. Has a page been created at this slug
+        # since the move was requested? If not, OK to go ahead and
+        # change our slug.
+        self._move_conflicts(new_slug)
+
         if user is None:
             user = self.current_revision.creator
+        if title is None:
+            title = self.title
 
-        rev = self.current_revision
-        review_tags = [str(tag) for tag in rev.review_tags.all()]
+        # Step 2: stash our current review tags, since we want to
+        # preserve them.
+        review_tags = [str(tag) for tag in self.current_revision.review_tags.all()]
 
-        # Shortcut trick for getting an object with all the same
-        # values, but making Django think it's new.
-        rev.id = None
+        # Step 3: Create (but don't yet save) a copy of our current
+        # revision, but with the new slug and title (if title is
+        # changing too).
+        moved_rev = self._moved_revision(new_slug, user, title)
 
-        rev.creator = user
-        rev.created = datetime.now()
-        rev.slug = new_slug
-        if title:
-            rev.title = title
+        # Step 4: Create (but don't yet save) a Document and Revision
+        # to leave behind as a redirect from old location to new.
+        redirect_doc, redirect_rev = self._post_move_redirects(new_slug, user, title)
+        
+        # Step 5: Update our breadcrumbs.
+        new_parent = self._post_move_breadcrumbs(new_slug)
 
-        rev.save(force_insert=True)
+        # If we found a Document at what will be our parent slug, set
+        # it as our parent_topic. If we didn't find one, then we no
+        # longer have a parent_topic (since our original parent_topic
+        # would already have moved if it were going to).
+        self.parent_topic = new_parent
 
-        rev.review_tags.set(*review_tags)
+        # Step 6: Save this Document.
+        self.slug = new_slug
+        self.save()
 
+        # Step 7: Save the Revision that actually moves us.
+        moved_rev.save(force_insert=True)
+
+        # Step 8: Save the review tags.
+        moved_rev.review_tags.set(*review_tags)
+
+        # Step 9: Save the redirect.
+        redirect_doc.save()
+        redirect_rev.document = redirect_doc
+        redirect_rev.save()
+
+        # Finally, step 10: recurse through all of our children.
         for child in self.children.all():
             child_title = child.slug.split('/')[-1]
             child._move_tree('/'.join([new_slug, child_title]), user)
@@ -1331,24 +1411,6 @@ class Document(NotificationsMixin, models.Model):
         # Finally, assign the new default parent topic
         self.parent_topic = new_pt
         self.save()
-
-    def __setattr__(self, name, value):
-        """Trap setting slug and title, recording initial value."""
-        # Public API: delete the old_title or old_slug attrs after changing
-        # title or slug (respectively) to suppress redirect generation.
-        if getattr(self, 'id', None):
-            # I have been saved and so am worthy of a redirect.
-            if name in ('slug', 'title') and hasattr(self, name):
-                old_name = 'old_' + name
-                if not hasattr(self, old_name):
-                    # Case insensitive comparison:
-                    if getattr(self, name).lower() != value.lower():
-                        # Save original value:
-                        setattr(self, old_name, getattr(self, name))
-                elif value == getattr(self, old_name):
-                    # They changed the attr back to its original value.
-                    delattr(self, old_name)
-        super(Document, self).__setattr__(name, value)
 
     @property
     def content_parsed(self):
@@ -1798,9 +1860,31 @@ class DocumentType(SearchMappingType, Indexable):
         return '%s%s' % (settings.SITE_URL, path)
 
 
+class DocumentZoneManager(models.Manager):
+    """Manager for DocumentZone objects"""
+
+    def get_url_remaps(self, locale):
+        cache_key = URL_REMAPS_CACHE_KEY_TMPL % locale
+        s_cache = get_cache(SECONDARY_CACHE_ALIAS)
+        remaps = s_cache.get(cache_key)
+        
+        if not remaps:
+            qs = (self.filter(document__locale=locale,
+                              url_root__isnull=False)
+                      .exclude(url_root=''))
+            remaps = [{
+                'original_path': '/docs/%s' % zone.document.slug,
+                'new_path': '/%s' % zone.url_root
+            } for zone in qs]
+            s_cache.set(cache_key, remaps)
+
+        return remaps
+
+
 class DocumentZone(models.Model):
     """Model object declaring a content zone root at a given Document, provides
     attributes inherited by the topic hierarchy beneath it."""
+    objects = DocumentZoneManager()
 
     document = models.ForeignKey(Document, related_name='zones', unique=True)
     styles = models.TextField(null=True, blank=True)
@@ -1812,12 +1896,28 @@ class DocumentZone(models.Model):
         return u'DocumentZone %s (%s)' % (self.document.get_absolute_url(),
                                           self.document.title)
 
+    def save(self, *args, **kwargs):
+        super(DocumentZone, self).save(*args, **kwargs)
+
+        # Invalidate URL remap cache for this zone
+        locale = self.document.locale
+        cache_key = URL_REMAPS_CACHE_KEY_TMPL % locale
+        s_cache = get_cache(SECONDARY_CACHE_ALIAS)
+        s_cache.delete(cache_key)
+
 
 class ReviewTag(TagBase):
     """A tag indicating review status, mainly for revisions"""
     class Meta:
         verbose_name = _("Review Tag")
         verbose_name_plural = _("Review Tags")
+
+
+class LocalizationTag(TagBase):
+    """A tag indicating localization status, mainly for revisions"""
+    class Meta:
+        verbose_name = _("Localization Tag")
+        verbose_name_plural = _("Localization Tags")
 
 
 class ReviewTaggedRevision(ItemBase):
@@ -1836,6 +1936,20 @@ class ReviewTaggedRevision(ItemBase):
                 reviewtaggedrevision__content_object=instance)
         return ReviewTag.objects.filter(
             reviewtaggedrevision__content_object__isnull=False).distinct()
+
+
+class LocalizationTaggedRevision(ItemBase):
+    """Through model, just for localization tags on revisions"""
+    content_object = models.ForeignKey('Revision')
+    tag = models.ForeignKey(LocalizationTag)
+
+    @classmethod
+    def tags_for(cls, model, instance=None):
+        if instance is not None:
+            return LocalizationTag.objects.filter(
+                localizationtaggedrevision__content_object=instance)
+        return Localization.objects.filter(
+            localizationtaggedrevision__content_object__isnull=False).distinct()
 
 
 class Revision(models.Model):
@@ -1863,6 +1977,8 @@ class Revision(models.Model):
     # should constrain things from getting expensive.
     review_tags = TaggableManager(through=ReviewTaggedRevision)
 
+    localization_tags = TaggableManager(through=LocalizationTaggedRevision)
+
     toc_depth = models.IntegerField(choices=TOC_DEPTH_CHOICES,
                                     default=TOC_DEPTH_ALL)
 
@@ -1882,11 +1998,6 @@ class Revision(models.Model):
     # TODO: limit_choices_to={'document__locale':
     # settings.WIKI_DEFAULT_LANGUAGE} is a start but not sufficient.
 
-    # HACK: Migration bookkeeping - index by the old_id of MindTouch revisions
-    # so that migrations can be idempotent.
-    mindtouch_old_id = models.IntegerField(
-            help_text="ID for migrated MindTouch revision (null for current)",
-            null=True, db_index=True, unique=True)
     is_mindtouch_migration = models.BooleanField(default=False, db_index=True,
             help_text="Did this revision come from MindTouch?")
 

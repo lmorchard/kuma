@@ -2,183 +2,225 @@
 @import 'mixins'
 @import 'grid'
 
-.zone
-  create-gradient-background('', true)
+.zone {
+  create-gradient-background(#00539f, true);
+  use-white-logo();
+  remove-main-spacing();
 
-  #main-header
-    border-bottom-color rgba(255, 255, 255, 0.2)
+  #main-header {
+    border-bottom-color: rgba(255, 255, 255, 0.2);
+  }
 
-    .logo
-      background url('/media/redesign/img/mdn_logo-wordmark-full_white.svg') 0 0 no-repeat
+  override-main-nav-color(#fff);
 
-  override-main-nav-color(#fff)
+  .search-wrap {
+    background-color: rgba(255, 255, 255, 0.2);
 
-  .search-wrap
-    background-color rgba(255, 255, 255, 0.2)
+    input, i {
+      color: #fff;
+      set-placeholder-style(color, #fff);
+    }
+  }
 
-    input, i
-      color #fff
-      set-placeholder-style(color, #fff)
-
-  .user-state
-    a, a:hover, a:focus, a:visited
-      color #fff
+  .user-state {
+    a, a:hover, a:focus, a:visited {
+      color: #fff;
+    }
+  }
 
   /* zone content area needs to be adjusted for zone pages */
-  remove-main-spacing()
-  main
-    background transparent
+  main {
+    background: transparent;
+  }
 
-  .wiki-main-content
-    padding-top first-content-top-padding !important
+  .wiki-main-content {
+    padding-top: first-content-top-padding !important;
 
-.zone-landing
+    .center {
+      add-center-spacing();
+    }
+  }
+}
 
-  h1
-    color #fff
-    @extend .column-6
+.zone-landing {
 
-  .zone-landing-header-preview
-    margin-top grid-spacing
+  h1 {
+    @extend .column-6;
+    color: #fff;
+    clear: both;
+  }
 
-    .column-strip
-      position relative
+  .zone-landing-header-preview {
+    margin-top: grid-spacing;
 
-      .zone-landing-header-preview-base
-        position absolute
-        width 100%
-        z-index 2
+    .column-strip {
+      position: relative;
 
-  .crumbs
-    color #fff
+      .zone-landing-header-preview-base {
+        position: absolute;
+        width: 100%;
+        z-index: 2;
+      }
 
-    a
-      old-ie(color, #fff)
-      color rgba(255, 255, 255, 0.7)
+      .zone-landing-header-spacing {
+        float: left;
+      }
+    }
+  }
 
-  .zone-subnav-container
-    /* nada */
+  .crumbs {
+    color: #fff;
 
-  .summary
-    display none
+    a {
+      old-ie(color, #fff);
+      color: rgba(255, 255, 255, 0.7);
+    }
+  }
 
-  h3.title
-    font-size base-font-size
-    margin 6px 0 0 0
+  .summary {
+    display: none;
+  }
 
-.zone-landing-header
+  h3.title {
+    font-size: base-font-size;
+    margin: 6px 0 0 0;
+  }
+}
+
+.zone-landing-header {
   /* create-gradient-background(#0095dd) */
-  color #fff
-  position relative
-  
-  > .center
-    padding-top first-content-top-padding
+  color: #fff;
+  position: relative;
 
-  .masthead-text
-    p
-      font-size larger-font-size
-      font-weight light-font-weight
+  > .center {
+    padding-top: first-content-top-padding;
+  }
 
-  .zone-image
-    position absolute
-    right -140px
-    top 100px
-    display block
-    width 468px
-    bottom 0
+  .masthead-text {
+    p {
+      @extend .larger;
+      font-weight: light-font-weight;
+      margin-right: 80px;
+    }
+  }
 
-  a.button
-    compat-important(color, #fff)
-    old-ie(background-color, #0095dd, true) /* old ie */
-    compat-important(background-color, rgba(0, 0, 0, 0.1))
-    vendorize(box-shadow, inset 0 -1px rgba(0, 0, 0, .1))
+  .zone-image {
+    position: absolute;
+    right: 0;
+    top: 100px;
+    display: block;
+    width: 468px;
+    bottom: 0;
+    background-repeat: no-repeat;
+  }
 
-.zone-landing-lists li
-  padding list-item-spacing 0
-  prevent-last-child-spacing(padding-bottom)
+  a.button {
+    compat-important(color, #fff);
+    &:not(.transparent) {
+      old-ie(background-color, #0095dd, true); /* old ie */
+      compat-important(background-color, rgba(0, 0, 0, 0.1));
+      vendorize(box-shadow, inset 0 -1px rgba(0, 0, 0, .1));
+    }
+  }
+}
+
+.zone-landing-lists li {
+  padding: list-item-spacing 0;
+  prevent-last-child-spacing(padding-bottom);
+}
 
 
 
 /*  Basic zone article pages */
-.zone-article-header
-  padding (grid-spacing * 2) 0
-  overflow hidden
+.zone-article-header {
+  padding: grid-spacing 0;
+  overflow: hidden;
 
-  .zone-title
-    @extend .heading-2
-    color #fff
-    font-style italic
+  .zone-title {
+    @extend .heading-2;
 
-  .zone-image
-    position absolute
-    right 0
-    top 0
-    display block
-    width 200px
-    height 400px
-    background-size contain
+    a {
+      font-family: heading-font-family;
+      color: #fff;
+    }
+  }
 
-.zone-content
-  padding-top 38px
+  .zone-image {
+    position: absolute;
+    right: 0;
+    top: 0;
+    display: block;
+    width: 200px;
+    height: 400px;
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+}
+
+.zone-content {
+  padding-top: 38px;
   reverse-link-decoration()
+}
 
-.zone-subnav-container
-  background #fff
-  margin-bottom grid-spacing
+.zone-subnav-container {
+  background: #fff;
+  margin-bottom: grid-spacing;
+}
 
-.zone-callout
-  position relative
-  padding grid-spacing
-  background #f4f7f8
-  margin (grid-spacing + (grid-spacing / 2)) 0
+.zone-callout {
+  position: relative;
+  padding: grid-spacing;
+  background: #f4f7f8;
+  margin: (grid-spacing + (grid-spacing / 2)) 0;
 
-  table
-    width 100%
-  td
-    vertical-align bottom
-    padding-right grid-spacing
-    
+  table {
+    width: 100%;
+  }
+  td {
+    vertical-align: bottom;
+    padding-right: grid-spacing;
+  }
+}
 
-/* tablets */
-@media media-query-tablet
-  .zone-landing
-    .zone-subnav-container
-      margin-top 0
 
-    .zone-landing-header-preview .column-strip, .zone-landing-header-preview .masthead-text
-      width get-grid-dimension(media-query-tablet, 6)
 
-      .zone-landing-header-preview-base
-        position static
+@media media-query-tablet {
+  .zone-landing {
+      .zone-subnav-container {
+        margin-top 0
+      }
 
-    .zone-image
-      opacity 0.2
+      .zone-landing-header-preview .column-strip, .zone-landing-header-preview .masthead-text {
+        width: get-grid-dimension(media-query-tablet, 6);
 
-/* mobile */
-@media media-query-mobile
-      
-  .zone-landing
-    .zone-landing-header-preview .column-strip, .zone-landing-header-preview .masthead-text
-      width auto
-      float none
+        .zone-landing-header-preview-base {
+          position: static;
+        }
+      }
 
-      .zone-landing-header-preview-base
-        position static
+      .zone-image {
+        opacity: 0.2;
+      }
+  }
 
-  .zone-image
-    opacity 0.2
-    
-  .zone-landing-header
-    .masthead-text p
-      margin-top 0
+  .zone-landing-header {
 
-  #wiki-content
-    width auto
-    float none
-    
+    .masthead-text {
+      p {
+        margin-right: 0;
+      }
+    }
+  }
+}
+
 /* right to left */
-.html-rtl
-  .zone-article-header
-    .zone-image
-      right auto
-      left 0
+.html-rtl {
+
+  .zone-article-header {
+    .zone-image {
+      right: auto;
+      left: 0;
+    }
+  }
+}
+

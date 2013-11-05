@@ -67,24 +67,34 @@ class UserProfile(ModelBase):
         )),
         ('twitter', dict(
             label=_(u'Twitter'),
-            prefix='http://twitter.com/',
+            prefix='https://twitter.com/',
             regex='^https?://twitter.com/',
         )),
         ('github', dict(
             label=_(u'GitHub'),
-            prefix='http://github.com/',
+            prefix='https://github.com/',
             regex='^https?://github.com/',
         )),
         ('stackoverflow', dict(
             label=_(u'StackOverflow'),
-            prefix='http://stackoverflow.com/users/',
+            prefix='https://stackoverflow.com/users/',
             regex='^https?://stackoverflow.com/users/',
         )),
         ('linkedin', dict(
             label=_(u'LinkedIn'),
-            prefix='http://www.linkedin.com/in/',
+            prefix='https://www.linkedin.com/in/',
             regex='^https?://www.linkedin.com/in/',
         )),
+        ('mozillians', dict(
+            label=_(u'Mozillians'),
+            prefix='https://mozillians.org/u/',
+            regex='^https?://mozillians.org/u/',
+        )),
+        ('facebook', dict(
+            label=_(u'Facebook'),
+            prefix='https://www.facebook.com/',
+            regex='^https?://www.facebook.com/',
+        ))
     ]
 
     class Meta:

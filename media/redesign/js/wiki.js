@@ -1,20 +1,13 @@
 (function($) {
 
   /*
-    Create the settings menu
+    Create the settings and languages menu
   */
   (function() {
-    var $settingsMenu = $('#settings-menu');
-    $settingsMenu.mozMenu();
-    $settingsMenu.parent().find('.submenu').mozKeyboardNav();
+    var $menus = $('#settings-menu, #languages-menu');
+    $menus.mozMenu();
+    $menus.parent().find('.submenu').mozKeyboardNav();
   })();
-
-  /*
-    New tag placeholder, needs $.ready because that's when the plugin is set
-  */
-  $.ready(function() {
-    $('.tagit-new input').attr('placeholder', gettext('New tag...'));
-  });
 
   /*
     Set up the "from search" buttons if user came from search
@@ -41,12 +34,21 @@
     $quickLinks.find('.toggleable').mozTogglers();
     
     var side = $('#quick-links-toggle').closest('.wiki-column').attr('id');
+    var $columnContainer = $('#wiki-column-container');
+    var $quickLinksControl = $('#wiki-controls .quick-links');
+
     // Quick Link toggles
     $('#quick-links-toggle, #show-quick-links').on('click', function(e) {
+      var $side = $('#' + side);
+
       e.preventDefault();
-      $('#' + side).toggleClass('column-closed');
-      $('#wiki-column-container').toggleClass(side + '-closed');
-      $('#wiki-controls .quick-links').toggleClass('hidden');
+      $side.toggleClass('column-closed');
+      $columnContainer.toggleClass(side + '-closed');
+      $quickLinksControl.toggleClass('hidden');
+
+      if($side.hasClass('column-closed')) {
+        $(window).trigger('resize');
+      }
     });
   })();
   
@@ -94,6 +96,73 @@
       }
     });
   }
-
-
+  
+  /*
+    Set up the scrolling TOC effect
+  */
+  (function() {
+    var $toc = $('#toc');
+    if($toc.length) {
+      var tocOffset = $toc.offset().top;
+      var $toggler = $toc.find('> .toggler');
+      var fixedClass = 'fixed';
+      var $wikiRight = $('#wiki-right');
+      
+      var resizeFn = debounce(function(e) {
+        // Set forth the pinned or static positioning of the table of contents
+        var scroll = window.scrollY;
+        var maxHeight = window.innerHeight - parseInt($toc.css('padding-top'), 10) - parseInt($toc.css('padding-bottom'), 10);
+        
+        if(scroll > tocOffset && $toggler.css('pointer-events') == 'none') {
+          $toc.css({
+            width: $toc.css('width'),
+            maxHeight: maxHeight
+          });
+          
+          if(!$toc.hasClass(fixedClass)){
+            $toc.addClass(fixedClass);
+          }
+        }
+        else {
+          $toc.css({
+            width: 'auto',
+            maxHeight: 'none'
+          });
+          $toc.removeClass(fixedClass);
+        }
+        
+        // Should the TOC be one-column (auto-closed) or sidebar'd
+        if(!e || e.type == 'resize') {
+          if($toggler.css('pointer-events') == 'auto'  || $toggler.find('i').css('display') != 'none') { /* icon check is for old IEs that don't support pointer-events */
+            if(!$toc.attr('data-closed')) {
+              $toggler.trigger('click');
+            }
+          }
+          else if($toc.attr('data-closed')) { // Changes width, should be opened (i.e. mobile to desktop width)
+            $toggler.trigger('click');
+          }
+        }
+      }, 10);
+      
+      // Set it forth!
+      resizeFn();
+      $(window).on('scroll resize', resizeFn);
+    }
+  })();
+  
+  function debounce(func, wait, immediate) {
+    var timeout;
+    return function() {
+      var context = this, args = arguments;
+      var later = function() {
+        timeout = null;
+        if (!immediate) func.apply(context, args);
+      };
+      var callNow = immediate && !timeout;
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+      if (callNow) func.apply(context, args);
+    };
+  };
+  
 })(jQuery);

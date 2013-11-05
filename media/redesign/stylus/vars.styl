@@ -1,70 +1,48 @@
 /* colors */
-text-color = #4d4e53
-link-color = #0095dd
-menu-link-color = #4d4e53
-header-background-color = #eaeff2
-light-background-color = #f4f7f8
+text-color = #4d4e53;
+link-color = #0095dd;
+menu-link-color = text-color;
+header-background-color = #eaeff2;
+light-background-color = #f4f7f8;
 
 /* typography */
-light-font-weight = 200
-site-font-family = 'Open Sans', sans-serif
-heading-font-family = 'Open Sans Light', sans-serif
+light-font-weight = 200;
+site-font-family = 'Open Sans', sans-serif;
+heading-font-family = 'Open Sans Light', sans-serif;
 
 /* sizes */
-base-font-size = 14px
-smaller-font-size = 12px
-larger-font-size = 20px
+base-font-size = 14px;
+smaller-font-size = 12px;
+base-bump-font-size = 16px;
+larger-font-size = 20px;
 
 /* buttons */
-button-background = #eaeff2
-button-color = menu-link-color
-button-shadow-color = #bbbfc2
+button-background = #eaeff2;
+button-color = menu-link-color;
+button-shadow-color = #bbbfc2;
 
 /* grid and site dimensions */
-grid-spacing = 20px
-grid-spacing-wide = 24px
+grid-spacing = 20px;
+grid-margin = 3%;
+grid-column-selector = '> [class^="column-"]';
+grid-width-column-main = 73.5%;
 
-grid-increment-desktop = 80px
-grid-increment-desktop-large = 99px
-grid-increment-desktop-wide = 125px
-grid-increment-tablet = 60px
-grid-increment-mobile = grid-increment-tablet
+max-width-default = 1400px;
 
-grid-start-desktop = 60px
-grid-start-desktop-large = 75px
-grid-start-desktop-wide = 125px
-grid-start-tablet = 40px
-grid-start-mobile = grid-start-tablet
-
-grid-end-desktop = 940px
-grid-end-desktop-large = 1164px
-grid-end-desktop-wide = 1764px
-grid-end-tablet = 700px
-grid-end-mobile = 280px
-grid-end-mobile-wide = 400px
-
-site-width-desktop = 1000px
-site-width-desktop-large = 1224px
-site-width-desktop-wide = 1824px
-site-width-tablet = 760px
-site-width-mobile = 320px
-site-width-mobile-wide = 480px
-
-media-query-desktop-large = 'only screen and/*!YUI Compressor */(min-width: 1224px)'
-media-query-desktop-wide = 'only screen and/*!YUI Compressor */(min-width: 1824px)'
-media-query-tablet = 'only screen and/*!YUI Compressor */(min-width: 760px) and/*!YUI Compressor */(max-width: 1000px)'
-media-query-mobile = 'only screen and/*!YUI Compressor */(max-width: 760px)'
-media-query-mobile-wide = 'only screen and/*!YUI Compressor */(min-width: 480px) and/*!YUI Compressor */(max-width: 760px)'
+media-query-small-desktop = 'all and/*!YUI */(max-width: 1200px)';
+media-query-tablet = 'all and/*!YUI */(max-width: 1024px)';
+media-query-mobile = 'all and/*!YUI */(max-width: 768px)';
 
 /* animation */
-animation-duration = .5s
-slide-timing-function = cubic-bezier(0, 1, 0.5, 1)
+default-animation-duration = .5s;
+slide-timing-function = cubic-bezier(0, 1, 0.5, 1);
 
 /* dimensions */
-gutter-width = 30px
-first-content-top-padding = (grid-spacing * 2) /*grid-spacing*/
-list-item-spacing = 8px
-content-block-margin = grid-spacing
+gutter-width = 24px;
+first-content-top-padding = (grid-spacing * 2);
+list-item-spacing = 8px;
+content-block-margin = gutter-width;
 
 /* selectors */
-selector-icon = 'i[class^="icon-"]'
+selector-icon = 'i[class^="icon-"]';
+media-url-dir = '/media/redesign/img/';

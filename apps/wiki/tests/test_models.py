@@ -286,52 +286,6 @@ class DocumentTests(TestCase):
         self._test_int_sets_and_descriptors(OperatingSystem,
                                             'operating_systems')
 
-    def _test_remembering_setter_unsaved(self, field):
-        """A remembering setter shouldn't kick in until the doc is saved."""
-        old_field = 'old_' + field
-        d = document()
-        setattr(d, field, 'Foo')
-        assert not hasattr(d, old_field), "Doc shouldn't have %s until it's" \
-                                          "saved." % old_field
-
-    def test_slug_setter_unsaved(self):
-        self._test_remembering_setter_unsaved('slug')
-
-    def test_title_setter_unsaved(self):
-        self._test_remembering_setter_unsaved('title')
-
-    def _test_remembering_setter(self, field):
-        old_field = 'old_' + field
-        d = document()
-        d.save()
-        old = getattr(d, field)
-
-        # Changing the field makes old_field spring into life:
-        setattr(d, field, 'Foo')
-        eq_(old, getattr(d, old_field))
-
-        # Changing it back makes old_field disappear:
-        setattr(d, field, old)
-        assert not hasattr(d, old_field)
-
-        # Change it again once:
-        setattr(d, field, 'Foo')
-
-        # And twice:
-        setattr(d, field, 'Bar')
-
-        # And old_field should remain as it was, since it hasn't been saved
-        # between the two changes:
-        eq_(old, getattr(d, old_field))
-
-    def test_slug_setter(self):
-        """Make sure changing a slug remembers its old value."""
-        self._test_remembering_setter('slug')
-
-    def test_title_setter(self):
-        """Make sure changing a title remembers its old value."""
-        self._test_remembering_setter('title')
-
     def test_only_localizable_allowed_children(self):
         """You can't have children for a non-localizable document."""
         # Make English rev:
@@ -685,75 +639,6 @@ class DocumentTestsWithFixture(TestCase):
         eq_(sample_html.strip(), result['html'].strip())
         eq_(sample_css.strip(), result['css'].strip())
         eq_(sample_js.strip(), result['js'].strip())
-
-
-class RedirectCreationTests(TestCase):
-    """Tests for automatic creation of redirects when slug or title changes"""
-    fixtures = ['test_users.json']
-
-    def setUp(self):
-        self.d, self.r = doc_rev()
-        self.old_title = self.d.title
-        self.old_slug = self.d.slug
-
-    def test_change_slug(self):
-        """Test proper redirect creation on slug change."""
-        self.d.slug = 'new-slug'
-        self.d.save()
-        redirect = Document.objects.get(slug=self.old_slug)
-        # "uncached" isn't necessary, but someday a worse caching layer could
-        # make it so.
-        attrs = dict(title=self.d.title, href=self.d.get_absolute_url())
-        eq_(REDIRECT_CONTENT % attrs, redirect.current_revision.content)
-        eq_(REDIRECT_TITLE % dict(old=self.d.title, number=1), redirect.title)
-
-    def test_change_slug_and_title(self):
-        """Assert only one redirect is made when both slug and title change."""
-        self.d.title = 'New Title'
-        self.d.slug = 'new-slug'
-        self.d.save()
-        attrs = dict(title=self.d.title, href=self.d.get_absolute_url())
-        eq_(REDIRECT_CONTENT % attrs,
-            Document.objects.get(
-                slug=self.old_slug,
-                title=self.old_title).current_revision.content)
-
-    def test_no_redirect_on_unsaved_change(self):
-        """No redirect should be made when an unsaved doc's title or slug is
-        changed."""
-        d = document(title='Gerbil')
-        d.title = 'Weasel'
-        d.save()
-        # There should be no redirect from Gerbil -> Weasel:
-        assert not Document.objects.filter(title='Gerbil').exists()
-
-    def _test_collision_avoidance(self, attr, other_attr, template):
-        """When creating redirects, dodge existing docs' titles and slugs."""
-        # Create a doc called something like Whatever Redirect 1:
-        document(locale=self.d.locale,
-                **{other_attr: template % dict(old=getattr(self.d, other_attr),
-                                               number=1)}).save()
-
-        # Trigger creation of a redirect of a new title or slug:
-        setattr(self.d, attr, 'new')
-        self.d.save()
-
-        # It should be called something like Whatever Redirect 2:
-        redirect = Document.objects.get(**{attr: getattr(self,
-                                                          'old_' + attr)})
-        eq_(template % dict(old=getattr(self.d, other_attr),
-                            number=2), getattr(redirect, other_attr))
-
-    def test_slug_collision_avoidance(self):
-        """Dodge existing slugs when making redirects due to title changes."""
-        self._test_collision_avoidance('slug', 'title', REDIRECT_TITLE)
-
-    def test_redirects_unlocalizable(self):
-        """Auto-created redirects should be marked unlocalizable."""
-        self.d.slug = 'new-slug'
-        self.d.save()
-        redirect = Document.objects.get(slug=self.old_slug)
-        eq_(False, redirect.is_localizable)
 
 
 class TaggedDocumentTests(TestCase):
@@ -1447,24 +1332,6 @@ class PageMoveTests(TestCase):
         ok_(parent.has_children())
     
     @attr('move')
-    def test_move(self):
-        """Changing title/slug leaves behind a redirect document"""
-        rev = revision(title='Page that will be moved',
-                       slug='page-that-will-be-moved')
-        rev.is_approved = True
-        rev.save()
-
-        moved = revision(document=rev.document,
-                         title='Page that has been moved',
-                         slug='page-that-has-been-moved')
-        moved.is_approved = True
-        moved.save()
-
-        d = Document.objects.get(slug='page-that-will-be-moved')
-        ok_(d.id != rev.document.id)
-        ok_('page-that-has-been-moved' in d.redirect_url())
-
-    @attr('move')
     def test_move_tree(self):
         """Moving a tree of documents does the correct thing"""
 
@@ -1661,6 +1528,224 @@ class PageMoveTests(TestCase):
             eq_(tags, new_rev.tags)
             eq_(['technical'],
                 [str(tag) for tag in new_rev.review_tags.all()])
+
+    @attr('move')
+    def test_move_tree_breadcrumbs(self):
+        """Moving a tree of documents under an existing doc updates breadcrumbs"""
+
+        grandpa = revision(title='Top-level parent for breadcrumb move',
+                       slug='grandpa', is_approved=True, save=True)
+        grandpa_doc = grandpa.document
+
+        dad = revision(title='Mid-level parent for breadcrumb move',
+                       slug='grandpa/dad', is_approved=True, save=True)
+        dad_doc = dad.document
+        dad_doc.parent_topic = grandpa_doc
+        dad_doc.save()
+
+        son = revision(title='Bottom-level child for breadcrumb move',
+                       slug='grandpa/dad/son', is_approved=True, save=True)
+        son_doc = son.document
+        son_doc.parent_topic = dad_doc
+        son_doc.save()
+
+        grandma = revision(title='Top-level parent for breadcrumb move',
+                       slug='grandma', is_approved=True, save=True)
+        grandma_doc = grandma.document
+
+        mom = revision(title='Mid-level parent for breadcrumb move',
+                       slug='grandma/mom', is_approved=True, save=True)
+        mom_doc = mom.document
+        mom_doc.parent_topic = grandma_doc
+        mom_doc.save()
+
+        daughter = revision(title='Bottom-level child for breadcrumb move',
+                       slug='grandma/mom/daughter', is_approved=True, save=True)
+        daughter_doc = daughter.document
+        daughter_doc.parent_topic = mom_doc
+        daughter_doc.save()
+
+        # move grandma under grandpa
+        grandma_doc._move_tree('grandpa/grandma')
+
+        # assert the parent_topics are correctly rooted at grandpa
+        # note we have to refetch these to see any DB changes.
+        grandma_moved = Document.objects.get(locale=grandma_doc.locale,
+                                           slug='grandpa/grandma')
+        ok_(grandma_moved.parent_topic == grandpa_doc)
+        mom_moved = Document.objects.get(locale=mom_doc.locale,
+                                         slug='grandpa/grandma/mom')
+        ok_(mom_moved.parent_topic == grandma_moved)
+
+    @attr('move')
+    @attr('top')
+    def test_move_top_level_docs(self):
+        """Moving a top document to a new slug location"""
+        page_to_move_title = 'Page Move Root'
+        page_to_move_slug = 'Page_Move_Root'
+        page_child_slug = 'Page_Move_Root/Page_Move_Child'
+        page_moved_slug = 'Page_Move_Root_Moved'
+        page_child_moved_slug = 'Page_Move_Root_Moved/Page_Move_Child'
+
+        page_to_move_doc = document(title=page_to_move_title,
+                                    slug=page_to_move_slug,
+                                    save=True)
+        rev = revision(document=page_to_move_doc,
+                       title=page_to_move_title,
+                       slug=page_to_move_slug,
+                       save=True)
+        page_to_move_doc.current_revision = rev
+        page_to_move_doc.save()
+
+        page_child = revision(title='child', slug=page_child_slug,
+                         is_approved=True, save=True)
+        page_child_doc = page_child.document
+        page_child_doc.parent_topic = page_to_move_doc
+        page_child_doc.save()
+
+        # move page to new slug
+        new_title = page_to_move_title + ' Moved'
+
+        page_to_move_doc._move_tree(page_moved_slug, user=None,
+                                    title=new_title)
+        
+        page_to_move_doc = Document.objects.get(slug=page_to_move_slug)
+        page_moved_doc = Document.objects.get(slug=page_moved_slug)
+        page_child_doc = Document.objects.get(slug=page_child_slug)
+        page_child_moved_doc = Document.objects.get(slug=page_child_moved_slug)
+
+        ok_('REDIRECT' in page_to_move_doc.html)
+        ok_(page_moved_slug in page_to_move_doc.html)
+        ok_(new_title in page_to_move_doc.html)
+        ok_(page_moved_doc)
+        ok_('REDIRECT' in page_child_doc.html)
+        ok_(page_moved_slug in page_child_doc.html)
+        ok_(page_child_moved_doc)
+        # TODO: Fix this assertion?
+        # eq_('admin', page_moved_doc.current_revision.creator.username)
+
+    @attr('move')
+    def test_mid_move(self):
+        root_title = 'Root'
+        root_slug = 'Root'
+        child_title = 'Child'
+        child_slug = 'Root/Child'
+        moved_child_slug = 'DiffChild'
+        grandchild_title = 'Grandchild'
+        grandchild_slug = 'Root/Child/Grandchild'
+        moved_grandchild_slug = 'DiffChild/Grandchild'
+
+        root_doc = document(title=root_title,
+                            slug=root_slug,
+                            save=True)
+        rev = revision(document=root_doc,
+                       title=root_title,
+                       slug=root_slug,
+                       save=True)
+        root_doc.current_revision = rev
+        root_doc.save()
+
+        child = revision(title=child_title, slug=child_slug,
+                         is_approved=True, save=True)
+        child_doc = child.document
+        child_doc.parent_topic = root_doc
+        child_doc.save()
+
+        grandchild = revision(title=grandchild_title,
+                              slug=grandchild_slug,
+                              is_approved=True, save=True)
+        grandchild_doc = grandchild.document
+        grandchild_doc.parent_topic = child_doc
+        grandchild_doc.save()
+
+        child_doc._move_tree(moved_child_slug)
+
+        redirected_child = Document.objects.get(slug=child_slug)
+        moved_child = Document.objects.get(slug=moved_child_slug)
+        ok_('REDIRECT' in redirected_child.html)
+        ok_(moved_child_slug in redirected_child.html)
+
+        redirected_grandchild = Document.objects.get(slug=grandchild_doc.slug)
+        moved_grandchild = Document.objects.get(slug=moved_grandchild_slug)
+        ok_('REDIRECT' in redirected_grandchild.html)
+        ok_(moved_grandchild_slug in redirected_grandchild.html)
+
+    @attr('move')
+    def test_move_special(self):
+        root_slug = 'User:foo'
+        child_slug = '%s/child' % root_slug
+
+        new_root_slug = 'User:foobar'
+        
+        special_root = document(title='User:foo',
+                                slug=root_slug,
+                                save=True)
+        root_rev = revision(document=special_root,
+                            title=special_root.title,
+                            slug=root_slug,
+                            save=True)
+                            
+        special_child = document(title='User:foo child',
+                                 slug=child_slug,
+                                 save=True)
+        child_rev = revision(document=special_child,
+                             title=special_child.title,
+                             slug=child_slug,
+                             save=True)
+
+        special_child.parent_topic = special_root
+        special_child.save()
+
+        original_root_id = special_root.id
+        original_child_id = special_child.id
+        
+        # First move, to new slug.
+        special_root._move_tree(new_root_slug)
+
+        # Appropriate redirects were left behind.
+        root_redirect = Document.objects.get(locale=special_root.locale,
+                                             slug=root_slug)
+        ok_(root_redirect.is_redirect)
+        root_redirect_id = root_redirect.id
+        child_redirect = Document.objects.get(locale=special_child.locale,
+                                              slug=child_slug)
+        ok_(child_redirect.is_redirect)
+        child_redirect_id = child_redirect.id
+
+        # Moved documents still have the same IDs.
+        moved_root = Document.objects.get(locale=special_root.locale,
+                                          slug=new_root_slug)
+        eq_(original_root_id, moved_root.id)
+        moved_child = Document.objects.get(locale=special_child.locale,
+                                           slug='%s/child' % new_root_slug)
+        eq_(original_child_id, moved_child.id)
+
+        # Second move, back to original slug.
+        moved_root._move_tree(root_slug)
+
+        # Once again we left redirects behind.
+        root_second_redirect = Document.objects.get(locale=special_root.locale,
+                                                    slug=new_root_slug)
+        ok_(root_second_redirect.is_redirect)
+        child_second_redirect = Document.objects.get(locale=special_child.locale,
+                                                     slug='%s/child' % new_root_slug)
+        ok_(child_second_redirect.is_redirect)
+
+        # The documents at the original URLs aren't redirects anymore.
+        rerooted_root = Document.objects.get(locale=special_root.locale,
+                                             slug=root_slug)
+        ok_(not rerooted_root.is_redirect)
+        rerooted_child = Document.objects.get(locale=special_child.locale,
+                                              slug=child_slug)
+        ok_(not rerooted_child.is_redirect)
+
+        # The redirects created in the first move no longer exist in the DB.
+        self.assertRaises(Document.DoesNotExist,
+                          Document.objects.get,
+                          id=root_redirect_id)
+        self.assertRaises(Document.DoesNotExist,
+                          Document.objects.get,
+                          id=child_redirect_id)
 
 
 class DocumentZoneTests(TestCase):
