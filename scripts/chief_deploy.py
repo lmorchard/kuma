@@ -45,7 +45,7 @@ def update_assets(ctx):
 def database(ctx):
     with ctx.lcd(settings.SRC_DIR):
         ctx.local("python2.6 ./vendor/src/schematic/schematic migrations")  # schematic (old)
-        ctx.local("python2.6 manage.py migrate")                            # South (new)
+        ctx.local("python2.6 manage.py syncdb --noinput --migrate")         # South (new)
         ctx.local("python2.6 manage.py update_badges")
 
 

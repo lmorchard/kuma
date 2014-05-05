@@ -63,6 +63,7 @@ urlpatterns = patterns('',
 
     # Users
     ('', include('users.urls')),
+    (r'^accounts/', include('allauth.urls')),
 
     # BrowserID Realm
     url(r'^\.well-known/browserid-realm', 'users.views.browserid_realm',
