@@ -9,10 +9,13 @@ from django.contrib.sites.models import Site
 from django.core.mail import send_mail
 from django.db import models
 from django.template.loader import render_to_string
+from django.dispatch import receiver
 
 from timezones.fields import TimeZoneField
 from tower import ugettext as _
 from tower import ugettext_lazy as _lazy
+
+from allauth.socialaccount.signals import pre_social_login
 
 from countries import COUNTRIES
 from sumo.models import ModelBase
@@ -286,3 +289,30 @@ class UserBan(models.Model):
         super(UserBan, self).save(*args, **kwargs)
         self.user.is_active = not self.is_active
         self.user.save()
+
+
+@receiver(pre_social_login)
+def autoconnect_social_with_exising_profile(sender, **kwargs):
+    sociallogin = kwargs.get('sociallogin', None)
+    if sociallogin is None:
+        return
+    
+    #q.q("SOCIALLOGIN?", sociallogin.serialize())
+    #import logging; logging.debug("SOCIALLOGIN?", sociallogin.serialize())
+
+    import q;
+    
+    """
+    data = sociallogin.serialize()
+    for k, v in data.items():
+        q.q("SL", k, v)
+    for k, v in data['account'].items():
+        q.q("SL account", k, v)
+    for k, v in data['user'].items():
+        q.q("SL user ", k, v)
+    """
+
+    q.q("EMAIL", sociallogin.account.user.email)
+    q.q("PROVIDER", sociallogin.account.provider)
+    q.q("PROVIDER", sociallogin.account.get_provider())
+

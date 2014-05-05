@@ -1,7 +1,7 @@
 from django.conf.urls import include, patterns, url
 
 from sumo.views import redirect_to
-from users import views
+from users import views, models
 
 
 # These will all start with /user/<user_id>/
